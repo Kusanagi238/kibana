@@ -66,6 +66,9 @@ jest.mock('../../../../common/lib/kibana', () => ({
         },
         ui: { getCasesContext: mockCasesContext },
       },
+      featureFlags: {
+        getBooleanValue: jest.fn().mockResolvedValue(false),
+      },
       theme: {
         getTheme: jest.fn().mockReturnValue({ darkMode: false }),
       },
@@ -107,6 +110,9 @@ jest.mock('../../../../common/lib/kibana', () => ({
         useCasesAddToNewCaseFlyout: jest.fn(),
       },
       ui: { getCasesContext: mockCasesContext },
+    },
+    featureFlags: {
+      getBooleanValue: jest.fn().mockResolvedValue(false),
     },
     theme: {
       getTheme: jest.fn().mockReturnValue({ darkMode: false }),
