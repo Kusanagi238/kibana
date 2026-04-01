@@ -39,6 +39,7 @@ export type SkillsDirectoryStructure = Directory<{
         rules: FileDirectory;
       }>;
       rules: FileDirectory;
+      'attack-discovery': FileDirectory;
       entities: FileDirectory<{}>;
       endpoint: FileDirectory<{}>;
       ml: FileDirectory<{}>;
