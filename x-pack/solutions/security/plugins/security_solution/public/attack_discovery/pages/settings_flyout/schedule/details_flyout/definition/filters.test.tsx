@@ -13,10 +13,12 @@ import { useCreateDataView } from '../../../../../../common/hooks/use_create_dat
 import { TestProviders } from '../../../../../../common/mock';
 import { useSourcererDataView } from '../../../../../../sourcerer/containers';
 import { useIsExperimentalFeatureEnabled } from '../../../../../../common/hooks/use_experimental_features';
+import { useDataView } from '../../../../../../data_view_manager/hooks/use_data_view';
 
 jest.mock('../../../../../../common/hooks/use_create_data_view');
 jest.mock('../../../../../../sourcerer/containers');
 jest.mock('../../../../../../common/hooks/use_experimental_features');
+jest.mock('../../../../../../data_view_manager/hooks/use_data_view');
 
 const mockUseCreateDataView = useCreateDataView as jest.MockedFunction<typeof useCreateDataView>;
 const mockUseSourcererDataView = useSourcererDataView as jest.MockedFunction<
@@ -44,6 +46,7 @@ describe.skip('Filters', () => {
     jest.clearAllMocks();
 
     (useIsExperimentalFeatureEnabled as jest.Mock).mockReturnValue(false);
+    (useDataView as jest.Mock).mockReturnValue({ dataView: undefined });
     mockUseCreateDataView.mockReturnValue({
       dataView: {
         getIndexPattern: () => 'logstash-*',

@@ -205,6 +205,7 @@ const AttackDiscoveryPageComponent: React.FC = () => {
           overrideFilter: overrideOptions?.overrideFilter,
           overrideSize: overrideOptions?.overrideSize,
           overrideStart: overrideOptions?.overrideStart,
+          trigger: overrideOptions?.trigger,
         });
       } finally {
         invalidateGetAttackDiscoveryGenerations();

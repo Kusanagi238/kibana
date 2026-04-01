@@ -10,13 +10,12 @@ import { EuiSpacer, EuiBasicTable } from '@elastic/eui';
 import React, { useCallback, useMemo, useState } from 'react';
 import type { AttackDiscoverySchedule } from '@kbn/elastic-assistant-common';
 
+import { useKibana } from '../../../../../common/lib/kibana';
+import { AttackDiscoveryEventTypes } from '../../../../../common/lib/telemetry';
 import * as i18n from './translations';
 
 import { useColumns } from './use_columns';
-import { useFindAttackDiscoverySchedules } from '../logic/use_find_schedules';
-import { useEnableAttackDiscoverySchedule } from '../logic/use_enable_schedule';
-import { useDisableAttackDiscoverySchedule } from '../logic/use_disable_schedule';
-import { useDeleteAttackDiscoverySchedule } from '../logic/use_delete_schedule';
+import { useScheduleApi } from '../logic/use_schedule_api';
 import { DetailsFlyout } from '../details_flyout';
 
 const DEFAULT_PAGE_SIZE = 10;
@@ -27,18 +26,25 @@ const DEFAULT_SORT_DIRECTION = 'asc';
  * Table Component for displaying Attack Discovery Schedules
  */
 export const SchedulesTable: React.FC = React.memo(() => {
+  const { telemetry } = useKibana().services;
+  const { useDeleteSchedule, useDisableSchedule, useEnableSchedule, useFindSchedules } =
+    useScheduleApi();
+
   const [pageIndex, setPageIndex] = useState(0);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
   const [sortField, setSortField] = useState<keyof AttackDiscoverySchedule>(DEFAULT_SORT_FIELD);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>(DEFAULT_SORT_DIRECTION);
 
-  const { data: { schedules, total } = { schedules: [], total: 0 }, isLoading: isDataLoading } =
-    useFindAttackDiscoverySchedules({
-      page: pageIndex,
-      perPage: pageSize,
-      sortField,
-      sortDirection,
-    });
+  const {
+    data: { schedules, total } = { schedules: [], total: 0 },
+    isLoading: isDataLoading,
+    refetch,
+  } = useFindSchedules({
+    page: pageIndex,
+    perPage: pageSize,
+    sortField,
+    sortDirection,
+  });
 
   const pagination = useMemo(() => {
     return {
@@ -75,9 +81,9 @@ export const SchedulesTable: React.FC = React.memo(() => {
   const [isTableLoading, setTableLoading] = useState(false);
   const [scheduleDetailsId, setScheduleDetailsId] = useState<string | undefined>(undefined);
 
-  const { mutateAsync: enableAttackDiscoverySchedule } = useEnableAttackDiscoverySchedule();
-  const { mutateAsync: disableAttackDiscoverySchedule } = useDisableAttackDiscoverySchedule();
-  const { mutateAsync: deleteAttackDiscoverySchedule } = useDeleteAttackDiscoverySchedule();
+  const { mutateAsync: enableAttackDiscoverySchedule } = useEnableSchedule();
+  const { mutateAsync: disableAttackDiscoverySchedule } = useDisableSchedule();
+  const { mutateAsync: deleteAttackDiscoverySchedule } = useDeleteSchedule();
 
   const openScheduleDetails = useCallback((scheduleId: string) => {
     setScheduleDetailsId(scheduleId);
@@ -87,39 +93,45 @@ export const SchedulesTable: React.FC = React.memo(() => {
       try {
         setTableLoading(true);
         await enableAttackDiscoverySchedule({ id });
+        telemetry.reportEvent(AttackDiscoveryEventTypes.ScheduleEnabled, {});
+        await refetch();
       } catch (err) {
         // Error is handled by the mutation's onError callback, so no need to do anything here
       } finally {
         setTableLoading(false);
       }
     },
-    [enableAttackDiscoverySchedule]
+    [enableAttackDiscoverySchedule, refetch, telemetry]
   );
   const disableSchedule = useCallback(
     async (id: string) => {
       try {
         setTableLoading(true);
         await disableAttackDiscoverySchedule({ id });
+        telemetry.reportEvent(AttackDiscoveryEventTypes.ScheduleDisabled, {});
+        await refetch();
       } catch (err) {
         // Error is handled by the mutation's onError callback, so no need to do anything here
       } finally {
         setTableLoading(false);
       }
     },
-    [disableAttackDiscoverySchedule]
+    [disableAttackDiscoverySchedule, refetch, telemetry]
   );
   const deleteSchedule = useCallback(
     async (id: string) => {
       try {
         setTableLoading(true);
         await deleteAttackDiscoverySchedule({ id });
+        telemetry.reportEvent(AttackDiscoveryEventTypes.ScheduleDeleted, {});
+        await refetch();
       } catch (err) {
         // Error is handled by the mutation's onError callback, so no need to do anything here
       } finally {
         setTableLoading(false);
       }
     },
-    [deleteAttackDiscoverySchedule]
+    [deleteAttackDiscoverySchedule, refetch, telemetry]
   );
 
   const rulesColumns = useColumns({
@@ -138,15 +150,15 @@ export const SchedulesTable: React.FC = React.memo(() => {
       </div>
       <EuiSpacer size="m" />
       <EuiBasicTable<AttackDiscoverySchedule>
-        tableCaption={i18n.ATTACK_DISCOVER_SCHEDULES_TABLE_CAPTION}
-        loading={isTableLoading}
+        columns={rulesColumns}
+        data-test-subj={'schedulesTable'}
+        itemId={'id'}
         items={schedules}
+        loading={isTableLoading}
+        onChange={onTableChange}
         pagination={pagination}
         sorting={sorting}
-        onChange={onTableChange}
-        itemId={'id'}
-        data-test-subj={'schedulesTable'}
-        columns={rulesColumns}
+        tableCaption={i18n.ATTACK_DISCOVER_SCHEDULES_TABLE_CAPTION}
       />
       {scheduleDetailsId && (
         <DetailsFlyout

@@ -9,37 +9,27 @@ import React from 'react';
 import { act, fireEvent, render, waitFor } from '@testing-library/react';
 
 import { SchedulesTable } from '.';
-import { useFindAttackDiscoverySchedules } from '../logic/use_find_schedules';
-import { useEnableAttackDiscoverySchedule } from '../logic/use_enable_schedule';
-import { useDisableAttackDiscoverySchedule } from '../logic/use_disable_schedule';
-import { useDeleteAttackDiscoverySchedule } from '../logic/use_delete_schedule';
+import { useScheduleApi } from '../logic/use_schedule_api';
 import { mockFindAttackDiscoverySchedules } from '../../../mock/mock_find_attack_discovery_schedules';
 import { useKibana } from '../../../../../common/lib/kibana';
 import { ATTACK_DISCOVERY_FEATURE_ID } from '../../../../../../common/constants';
 
 jest.mock('../../../../../common/lib/kibana');
-jest.mock('../logic/use_find_schedules');
-jest.mock('../logic/use_enable_schedule');
-jest.mock('../logic/use_disable_schedule');
-jest.mock('../logic/use_delete_schedule');
+jest.mock('../logic/use_schedule_api');
 
-const mockUseFindAttackDiscoverySchedules = useFindAttackDiscoverySchedules as jest.MockedFunction<
-  typeof useFindAttackDiscoverySchedules
->;
+const mockUseScheduleApi = useScheduleApi as jest.MockedFunction<typeof useScheduleApi>;
 
 const enableAttackDiscoveryScheduleMock = jest.fn();
-const mockUseEnableAttackDiscoverySchedule =
-  useEnableAttackDiscoverySchedule as jest.MockedFunction<typeof useEnableAttackDiscoverySchedule>;
 const disableAttackDiscoveryScheduleMock = jest.fn();
-const mockUseDisableAttackDiscoverySchedule =
-  useDisableAttackDiscoverySchedule as jest.MockedFunction<
-    typeof useDisableAttackDiscoverySchedule
-  >;
 const deleteAttackDiscoveryScheduleMock = jest.fn();
-const mockUseDeleteAttackDiscoverySchedule =
-  useDeleteAttackDiscoverySchedule as jest.MockedFunction<typeof useDeleteAttackDiscoverySchedule>;
+const refetchMock = jest.fn();
 
-describe('SchedulesTable', () => {
+const mockUseFindSchedules = jest.fn();
+const mockUseEnableSchedule = jest.fn();
+const mockUseDisableSchedule = jest.fn();
+const mockUseDeleteSchedule = jest.fn();
+
+describe('SchedulesTable (pre-workflow, feature flag OFF)', () => {
   beforeEach(() => {
     jest.clearAllMocks();
 
@@ -52,23 +42,36 @@ describe('SchedulesTable', () => {
             },
           },
         },
+        telemetry: { reportEvent: jest.fn() },
       },
     });
 
-    mockUseFindAttackDiscoverySchedules.mockReturnValue({
+    mockUseFindSchedules.mockReturnValue({
       data: mockFindAttackDiscoverySchedules,
       isLoading: false,
-    } as unknown as jest.Mocked<ReturnType<typeof useFindAttackDiscoverySchedules>>);
+      refetch: refetchMock,
+    });
 
-    mockUseEnableAttackDiscoverySchedule.mockReturnValue({
+    mockUseEnableSchedule.mockReturnValue({
       mutateAsync: enableAttackDiscoveryScheduleMock,
-    } as unknown as jest.Mocked<ReturnType<typeof useEnableAttackDiscoverySchedule>>);
-    mockUseDisableAttackDiscoverySchedule.mockReturnValue({
+    });
+    mockUseDisableSchedule.mockReturnValue({
       mutateAsync: disableAttackDiscoveryScheduleMock,
-    } as unknown as jest.Mocked<ReturnType<typeof useDisableAttackDiscoverySchedule>>);
-    mockUseDeleteAttackDiscoverySchedule.mockReturnValue({
+    });
+    mockUseDeleteSchedule.mockReturnValue({
       mutateAsync: deleteAttackDiscoveryScheduleMock,
-    } as unknown as jest.Mocked<ReturnType<typeof useDeleteAttackDiscoverySchedule>>);
+    });
+
+    mockUseScheduleApi.mockReturnValue({
+      isWorkflowsEnabled: false,
+      useCreateSchedule: jest.fn(),
+      useDeleteSchedule: mockUseDeleteSchedule,
+      useDisableSchedule: mockUseDisableSchedule,
+      useEnableSchedule: mockUseEnableSchedule,
+      useFindSchedules: mockUseFindSchedules,
+      useGetSchedule: jest.fn(),
+      useUpdateSchedule: jest.fn(),
+    } as unknown as ReturnType<typeof useScheduleApi>);
   });
 
   it('should render the schedules table container', () => {
@@ -124,10 +127,10 @@ describe('SchedulesTable', () => {
       mockFindAttackDiscoverySchedules.schedules[0],
       { ...mockFindAttackDiscoverySchedules.schedules[1], enabled: false },
     ];
-    mockUseFindAttackDiscoverySchedules.mockReturnValue({
+    mockUseFindSchedules.mockReturnValue({
       data: { total: schedules.length, schedules },
       isLoading: false,
-    } as unknown as jest.Mocked<ReturnType<typeof useFindAttackDiscoverySchedules>>);
+    });
 
     const { getAllByTestId } = render(<SchedulesTable />);
 
@@ -140,6 +143,79 @@ describe('SchedulesTable', () => {
       expect(enableAttackDiscoveryScheduleMock).toHaveBeenCalledWith({
         id: schedules[1].id,
       });
+    });
+  });
+
+  it('renders schedule names from public API data', () => {
+    const { getByText } = render(<SchedulesTable />);
+
+    for (const schedule of mockFindAttackDiscoverySchedules.schedules) {
+      expect(getByText(schedule.name)).toBeInTheDocument();
+    }
+  });
+
+  it('renders with useScheduleApi returning isWorkflowsEnabled false', () => {
+    render(<SchedulesTable />);
+
+    expect(mockUseScheduleApi).toHaveBeenCalled();
+    expect(mockUseScheduleApi.mock.results[0].value.isWorkflowsEnabled).toBe(false);
+  });
+
+  it('calls refetch after disabling a schedule', async () => {
+    const { getAllByTestId } = render(<SchedulesTable />);
+
+    const firstSwitchButton = getAllByTestId('scheduleSwitch')[0];
+    act(() => {
+      fireEvent.click(firstSwitchButton);
+    });
+
+    await waitFor(() => {
+      expect(disableAttackDiscoveryScheduleMock).toHaveBeenCalled();
+    });
+
+    await waitFor(() => {
+      expect(refetchMock).toHaveBeenCalled();
+    });
+  });
+
+  it('calls refetch after enabling a schedule', async () => {
+    const schedules = [{ ...mockFindAttackDiscoverySchedules.schedules[0], enabled: false }];
+    mockUseFindSchedules.mockReturnValue({
+      data: { total: schedules.length, schedules },
+      isLoading: false,
+      refetch: refetchMock,
+    });
+
+    const { getAllByTestId } = render(<SchedulesTable />);
+
+    const firstSwitchButton = getAllByTestId('scheduleSwitch')[0];
+    act(() => {
+      fireEvent.click(firstSwitchButton);
+    });
+
+    await waitFor(() => {
+      expect(enableAttackDiscoveryScheduleMock).toHaveBeenCalled();
+    });
+
+    await waitFor(() => {
+      expect(refetchMock).toHaveBeenCalled();
+    });
+  });
+
+  it('calls refetch after deleting a schedule', async () => {
+    const { getAllByTestId } = render(<SchedulesTable />);
+
+    const firstDeleteButton = getAllByTestId('deleteButton')[0];
+    act(() => {
+      fireEvent.click(firstDeleteButton);
+    });
+
+    await waitFor(() => {
+      expect(deleteAttackDiscoveryScheduleMock).toHaveBeenCalled();
+    });
+
+    await waitFor(() => {
+      expect(refetchMock).toHaveBeenCalled();
     });
   });
 });

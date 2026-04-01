@@ -15,15 +15,13 @@ import { DetailsFlyout } from '.';
 import { useKibana } from '../../../../../common/lib/kibana';
 import { TestProviders } from '../../../../../common/mock';
 import { useSourcererDataView } from '../../../../../sourcerer/containers';
-import { useUpdateAttackDiscoverySchedule } from '../logic/use_update_schedule';
-import { useGetAttackDiscoverySchedule } from '../logic/use_get_schedule';
+import { useScheduleApi } from '../logic/use_schedule_api';
 import { mockAttackDiscoverySchedule } from '../../../mock/mock_attack_discovery_schedule';
 import { ATTACK_DISCOVERY_FEATURE_ID } from '../../../../../../common/constants';
 import { waitForEuiToolTipVisible } from '@elastic/eui/lib/test/rtl';
 
 jest.mock('@kbn/inference-connectors');
-jest.mock('../logic/use_update_schedule');
-jest.mock('../logic/use_get_schedule');
+jest.mock('../logic/use_schedule_api');
 jest.mock('../../../../../common/lib/kibana');
 jest.mock('../../../../../sourcerer/containers');
 jest.mock('../utils/convert_form_data', () => ({
@@ -52,7 +50,10 @@ const mockUseKibana = useKibana as jest.MockedFunction<typeof useKibana>;
 const mockUseSourcererDataView = useSourcererDataView as jest.MockedFunction<
   typeof useSourcererDataView
 >;
-const updateAttackDiscoveryScheduleMock = jest.fn();
+const mockUseScheduleApi = useScheduleApi as jest.MockedFunction<typeof useScheduleApi>;
+const updateScheduleMock = jest.fn();
+const mockUseGetSchedule = jest.fn();
+const mockUseUpdateSchedule = jest.fn();
 
 const defaultProps = {
   scheduleId: mockAttackDiscoverySchedule.id,
@@ -78,6 +79,9 @@ const setupUseKibana = (updateAttackDiscoverySchedule = true) => {
             updateAttackDiscoverySchedule,
           },
         },
+      },
+      featureFlags: {
+        getBooleanValue: jest.fn().mockResolvedValue(false),
       },
       lens: {
         EmbeddableComponent: () => <div data-test-subj="mockEmbeddableComponent" />,
@@ -112,14 +116,24 @@ describe('DetailsFlyout', () => {
       isLoading: false,
       data: mockConnectors,
     });
-    (useUpdateAttackDiscoverySchedule as jest.Mock).mockReturnValue({
-      isLoading: false,
-      mutateAsync: updateAttackDiscoveryScheduleMock,
-    });
-    (useGetAttackDiscoverySchedule as jest.Mock).mockReturnValue({
+    mockUseGetSchedule.mockReturnValue({
       isLoading: false,
       data: { schedule: mockAttackDiscoverySchedule },
     });
+    mockUseUpdateSchedule.mockReturnValue({
+      isLoading: false,
+      mutateAsync: updateScheduleMock,
+    });
+    mockUseScheduleApi.mockReturnValue({
+      isWorkflowsEnabled: false,
+      useCreateSchedule: jest.fn(),
+      useDeleteSchedule: jest.fn(),
+      useDisableSchedule: jest.fn(),
+      useEnableSchedule: jest.fn(),
+      useFindSchedules: jest.fn(),
+      useGetSchedule: mockUseGetSchedule,
+      useUpdateSchedule: mockUseUpdateSchedule,
+    } as unknown as ReturnType<typeof useScheduleApi>);
   });
 
   it('should render the flyout title', async () => {
