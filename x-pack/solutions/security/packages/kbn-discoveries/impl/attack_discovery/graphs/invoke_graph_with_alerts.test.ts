@@ -12,6 +12,7 @@ import { invokeAttackDiscoveryGraphWithAlerts } from './invoke_graph_with_alerts
 import { ActionsClientLlm } from '@kbn/langchain/server';
 import { getLangSmithTracer } from '@kbn/langchain/server/tracers/langsmith';
 import { getDefaultAttackDiscoveryGraph } from '.';
+import { throwIfErrorCountsExceeded } from './throw_if_error_counts_exceeded';
 
 jest.mock('@kbn/langchain/server');
 jest.mock('@kbn/langchain/server/tracers/langsmith');
@@ -19,6 +20,7 @@ jest.mock('.', () => ({
   ...jest.requireActual('.'),
   getDefaultAttackDiscoveryGraph: jest.fn(),
 }));
+jest.mock('./throw_if_error_counts_exceeded');
 
 describe('invokeAttackDiscoveryGraphWithAlerts', () => {
   const mockActionsClient = {} as PublicMethodsOf<ActionsClient>;
@@ -343,13 +345,19 @@ describe('invokeAttackDiscoveryGraphWithAlerts', () => {
     expect(mockLogger.debug).toHaveBeenCalledWith(expect.any(Function));
   });
 
-  describe('ALERT_INJECTION debug logging', () => {
-    it('logs alert count at debug level when alerts are provided', async () => {
-      mockGraphInvoke.mockResolvedValue({
+  describe('throwIfErrorCountsExceeded', () => {
+    it('calls throwIfErrorCountsExceeded with graph result error counts after invoke', async () => {
+      const graphResult = {
         anonymizedDocuments: mockAlerts,
+        errors: ['parse error'],
+        generationAttempts: 3,
+        hallucinationFailures: 1,
         insights: [],
+        maxGenerationAttempts: 10,
+        maxHallucinationFailures: 5,
         replacements: {},
-      });
+      };
+      mockGraphInvoke.mockResolvedValue(graphResult);
 
       await invokeAttackDiscoveryGraphWithAlerts({
         actionsClient: mockActionsClient,
@@ -364,65 +372,45 @@ describe('invokeAttackDiscoveryGraphWithAlerts', () => {
         prompts: mockPrompts,
       });
 
-      expect(mockLogger.debug).toHaveBeenCalledWith(
-        expect.stringContaining(
-          '[ALERT_INJECTION] invokeAttackDiscoveryGraphWithAlerts: alerts.length=2'
-        )
-      );
+      expect(throwIfErrorCountsExceeded).toHaveBeenCalledWith({
+        errors: graphResult.errors,
+        generationAttempts: graphResult.generationAttempts,
+        hallucinationFailures: graphResult.hallucinationFailures,
+        logger: mockLogger,
+        maxGenerationAttempts: graphResult.maxGenerationAttempts,
+        maxHallucinationFailures: graphResult.maxHallucinationFailures,
+      });
     });
 
-    it('logs first alert pageContent preview at debug level when alerts exist', async () => {
+    it('propagates errors thrown by throwIfErrorCountsExceeded', async () => {
       mockGraphInvoke.mockResolvedValue({
         anonymizedDocuments: mockAlerts,
+        errors: [],
+        generationAttempts: 10,
+        hallucinationFailures: 0,
         insights: [],
+        maxGenerationAttempts: 10,
+        maxHallucinationFailures: 5,
         replacements: {},
       });
-
-      await invokeAttackDiscoveryGraphWithAlerts({
-        actionsClient: mockActionsClient,
-        alerts: mockAlerts,
-        apiConfig: {
-          action_type_id: '.gen-ai',
-          connector_id: 'test-connector',
-        },
-        connectorTimeout: 60000,
-        esClient: mockEsClient,
-        logger: mockLogger,
-        prompts: mockPrompts,
+      (throwIfErrorCountsExceeded as jest.Mock).mockImplementationOnce(() => {
+        throw new Error('Maximum generation attempts (10) reached.');
       });
 
-      expect(mockLogger.debug).toHaveBeenCalledWith(
-        expect.stringContaining(
-          '[ALERT_INJECTION] invokeAttackDiscoveryGraphWithAlerts: first alert pageContent'
-        )
-      );
-    });
-
-    it('logs warning at debug level when alerts array is empty', async () => {
-      mockGraphInvoke.mockResolvedValue({
-        anonymizedDocuments: [],
-        insights: [],
-        replacements: {},
-      });
-
-      await invokeAttackDiscoveryGraphWithAlerts({
-        actionsClient: mockActionsClient,
-        alerts: [],
-        apiConfig: {
-          action_type_id: '.gen-ai',
-          connector_id: 'test-connector',
-        },
-        connectorTimeout: 60000,
-        esClient: mockEsClient,
-        logger: mockLogger,
-        prompts: mockPrompts,
-      });
-
-      expect(mockLogger.debug).toHaveBeenCalledWith(
-        expect.stringContaining(
-          '[ALERT_INJECTION] invokeAttackDiscoveryGraphWithAlerts: EMPTY ALERTS'
-        )
-      );
+      await expect(
+        invokeAttackDiscoveryGraphWithAlerts({
+          actionsClient: mockActionsClient,
+          alerts: mockAlerts,
+          apiConfig: {
+            action_type_id: '.gen-ai',
+            connector_id: 'test-connector',
+          },
+          connectorTimeout: 60000,
+          esClient: mockEsClient,
+          logger: mockLogger,
+          prompts: mockPrompts,
+        })
+      ).rejects.toThrow('Maximum generation attempts (10) reached.');
     });
   });
 

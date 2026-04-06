@@ -22,6 +22,7 @@ import {
   getDefaultAttackDiscoveryGraph,
 } from '.';
 import { getLlmType } from '../../lib/helpers/get_llm_type';
+import { throwIfErrorCountsExceeded } from './throw_if_error_counts_exceeded';
 
 export interface InvokeAttackDiscoveryGraphWithAlertsParams {
   abortSignal?: AbortSignal;
@@ -128,24 +129,6 @@ export const invokeAttackDiscoveryGraphWithAlerts = async ({
 
   logger.debug(() => `Invoking Attack Discovery graph with ${alerts.length} pre-retrieved alerts`);
 
-  // Debug logging for alert injection troubleshooting
-  // Enable with: logging.loggers: [{ name: 'plugins.discoveries', level: 'debug' }] in kibana.dev.yml
-  logger.debug(
-    `[ALERT_INJECTION] invokeAttackDiscoveryGraphWithAlerts: alerts.length=${alerts.length}, will invoke graph with anonymizedDocuments`
-  );
-  if (alerts.length > 0) {
-    logger.debug(
-      `[ALERT_INJECTION] invokeAttackDiscoveryGraphWithAlerts: first alert pageContent (first 100 chars): ${alerts[0].pageContent?.substring(
-        0,
-        100
-      )}`
-    );
-  } else {
-    logger.debug(
-      `[ALERT_INJECTION] invokeAttackDiscoveryGraphWithAlerts: EMPTY ALERTS - graph will run retrieval step!`
-    );
-  }
-
   // Check if already aborted before starting graph execution
   if (abortSignal?.aborted) {
     throw new Error('Graph execution aborted before starting');
@@ -177,6 +160,23 @@ export const invokeAttackDiscoveryGraphWithAlerts = async ({
   );
 
   logger.debug(() => `Graph execution completed: ${result.insights?.length ?? 0} discoveries`);
+
+  const {
+    errors,
+    generationAttempts,
+    hallucinationFailures,
+    maxGenerationAttempts,
+    maxHallucinationFailures,
+  } = result;
+
+  throwIfErrorCountsExceeded({
+    errors,
+    generationAttempts,
+    hallucinationFailures,
+    logger,
+    maxGenerationAttempts,
+    maxHallucinationFailures,
+  });
 
   return {
     alertsContextCount: result.anonymizedDocuments.length,
