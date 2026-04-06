@@ -8,6 +8,8 @@
 import type { KibanaRequest, Logger } from '@kbn/core/server';
 import type { InferenceServerStart } from '@kbn/inference-plugin/server';
 
+import type { NonEmptyString } from '../../../lib/non_empty_string';
+
 interface ActionsClientLike {
   get: (params: { id: string }) => Promise<{ actionTypeId: string; name: string }>;
 }
@@ -31,14 +33,14 @@ export const resolveConnectorDetails = async ({
   request,
 }: {
   actionsClient: ActionsClientLike;
-  actionTypeId?: string;
+  actionTypeId?: NonEmptyString;
   connectorId: string;
-  connectorName?: string;
+  connectorName?: NonEmptyString;
   inference?: InferenceServerStart;
   logger: Logger;
   request?: KibanaRequest;
 }): Promise<{ actionTypeId: string; connectorName: string }> => {
-  if (actionTypeId != null && connectorName != null) {
+  if (actionTypeId && connectorName) {
     return { actionTypeId, connectorName };
   }
 

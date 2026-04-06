@@ -11,6 +11,7 @@ import type { CoreStart } from '@kbn/core/server';
 
 import { createTracedLogger } from '@kbn/discoveries/impl/lib/create_traced_logger';
 import type { DiscoveriesPluginStartDeps } from '../../../types';
+import { asNonEmpty } from '../../../lib/non_empty_string';
 import { resolveConnectorDetails } from '../../helpers/resolve_connector_details';
 import { DefaultValidationStepCommonDefinition } from '../../../../common/step_types/default_validation_step';
 import { authenticateAndGetSpace } from './helpers/authenticate_and_get_space';
@@ -70,10 +71,12 @@ export const getDefaultValidationStepDefinition = ({
 
         const actionsClient = await pluginsStart.actions.getActionsClientWithRequest(request);
 
+        // connectorName may be '' from upstream workflow steps; asNonEmpty converts
+        // it to undefined so resolveConnectorDetails looks up the real name:
         const { connectorName: resolvedConnectorName } = await resolveConnectorDetails({
           actionsClient,
           connectorId,
-          connectorName,
+          connectorName: asNonEmpty(connectorName),
           inference: pluginsStart.inference,
           logger,
           request,

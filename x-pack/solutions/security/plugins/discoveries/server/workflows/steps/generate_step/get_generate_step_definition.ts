@@ -11,6 +11,7 @@ import { createServerStepDefinition } from '@kbn/workflows-extensions/server';
 
 import { GenerateStepCommonDefinition } from '../../../../common/step_types/generate_step';
 import type { DiscoveriesPluginStartDeps } from '../../../types';
+import { asNonEmpty } from '../../../lib/non_empty_string';
 import { resolveConnectorDetails } from '../../helpers/resolve_connector_details';
 import { invokeGenerationGraph } from './helpers/invoke_generation_graph';
 import { transformDiscoveriesOutput } from './helpers/transform_discoveries_output';
@@ -74,11 +75,13 @@ export const getGenerateStepDefinition = ({
           model?: string;
         };
 
+        // action_type_id arrives as '' from the UI for EIS connectors; asNonEmpty
+        // converts it to undefined so resolveConnectorDetails performs a lookup
+        // instead of short-circuiting with an empty value:
         const { actionTypeId: resolvedActionTypeId } = await resolveConnectorDetails({
           actionsClient,
-          actionTypeId: parsedApiConfig.action_type_id,
+          actionTypeId: asNonEmpty(parsedApiConfig.action_type_id),
           connectorId: parsedApiConfig.connector_id,
-          connectorName: 'unused',
           inference: pluginsStart.inference,
           logger,
           request,

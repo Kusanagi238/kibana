@@ -112,6 +112,10 @@ describe('GenerateStepDefinition', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockGetAttackDiscoveryPrompts.mockResolvedValue(mockPrompts);
+    mockActionsClient.get.mockResolvedValue({
+      actionTypeId: '.gemini',
+      name: 'Test Connector',
+    });
 
     stepDefinition = getGenerateStepDefinition({
       connectorTimeout: 60000,

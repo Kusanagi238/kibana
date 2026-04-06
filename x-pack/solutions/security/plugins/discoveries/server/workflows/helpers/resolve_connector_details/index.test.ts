@@ -8,6 +8,7 @@
 import type { KibanaRequest, Logger } from '@kbn/core/server';
 import type { InferenceServerStart } from '@kbn/inference-plugin/server';
 
+import { asNonEmpty } from '../../../lib/non_empty_string';
 import { resolveConnectorDetails } from '.';
 
 describe('resolveConnectorDetails', () => {
@@ -40,9 +41,9 @@ describe('resolveConnectorDetails', () => {
     it('returns the provided values without calling actionsClient.get', async () => {
       const result = await resolveConnectorDetails({
         actionsClient: mockActionsClient,
-        actionTypeId: '.bedrock',
+        actionTypeId: asNonEmpty('.bedrock'),
         connectorId,
-        connectorName: 'Existing Name',
+        connectorName: asNonEmpty('Existing Name'),
         logger: mockLogger,
       });
 
@@ -61,15 +62,61 @@ describe('resolveConnectorDetails', () => {
 
       await resolveConnectorDetails({
         actionsClient: mockActionsClient,
-        actionTypeId: '.bedrock',
+        actionTypeId: asNonEmpty('.bedrock'),
         connectorId,
-        connectorName: 'Existing Name',
+        connectorName: asNonEmpty('Existing Name'),
         inference: mockInference,
         logger: mockLogger,
         request: mockRequest,
       });
 
       expect(mockGetConnectorById).not.toHaveBeenCalled();
+    });
+
+    it('triggers inference lookup when actionTypeId is asNonEmpty("") (i.e. undefined)', async () => {
+      const mockGetConnectorById = jest.fn().mockResolvedValue({
+        type: '.inference',
+        name: 'EIS Connector',
+      });
+      const mockInference = {
+        getConnectorById: mockGetConnectorById,
+      } as unknown as InferenceServerStart;
+
+      await resolveConnectorDetails({
+        actionsClient: mockActionsClient,
+        actionTypeId: asNonEmpty(''),
+        connectorId,
+        connectorName: asNonEmpty('Existing Name'),
+        inference: mockInference,
+        logger: mockLogger,
+        request: mockRequest,
+      });
+
+      expect(mockGetConnectorById).toHaveBeenCalled();
+      expect(mockActionsClient.get).not.toHaveBeenCalled();
+    });
+
+    it('triggers inference lookup when connectorName is asNonEmpty("") (i.e. undefined)', async () => {
+      const mockGetConnectorById = jest.fn().mockResolvedValue({
+        type: '.inference',
+        name: 'EIS Connector',
+      });
+      const mockInference = {
+        getConnectorById: mockGetConnectorById,
+      } as unknown as InferenceServerStart;
+
+      await resolveConnectorDetails({
+        actionsClient: mockActionsClient,
+        actionTypeId: asNonEmpty('.bedrock'),
+        connectorId,
+        connectorName: asNonEmpty(''),
+        inference: mockInference,
+        logger: mockLogger,
+        request: mockRequest,
+      });
+
+      expect(mockGetConnectorById).toHaveBeenCalled();
+      expect(mockActionsClient.get).not.toHaveBeenCalled();
     });
   });
 
@@ -78,7 +125,7 @@ describe('resolveConnectorDetails', () => {
       const result = await resolveConnectorDetails({
         actionsClient: mockActionsClient,
         connectorId,
-        connectorName: 'Existing Name',
+        connectorName: asNonEmpty('Existing Name'),
         logger: mockLogger,
       });
 
@@ -94,7 +141,7 @@ describe('resolveConnectorDetails', () => {
     it('resolves connectorName from actionsClient.get', async () => {
       const result = await resolveConnectorDetails({
         actionsClient: mockActionsClient,
-        actionTypeId: '.bedrock',
+        actionTypeId: asNonEmpty('.bedrock'),
         connectorId,
         logger: mockLogger,
       });
@@ -144,7 +191,7 @@ describe('resolveConnectorDetails', () => {
       await expect(
         resolveConnectorDetails({
           actionsClient: mockActionsClient,
-          actionTypeId: '.gen-ai',
+          actionTypeId: asNonEmpty('.gen-ai'),
           connectorId,
           logger: mockLogger,
         })
@@ -209,7 +256,7 @@ describe('resolveConnectorDetails', () => {
     it('preserves provided actionTypeId when resolving connectorName via inference', async () => {
       const result = await resolveConnectorDetails({
         actionsClient: mockActionsClient,
-        actionTypeId: '.bedrock',
+        actionTypeId: asNonEmpty('.bedrock'),
         connectorId,
         inference: mockInference,
         logger: mockLogger,
@@ -223,7 +270,7 @@ describe('resolveConnectorDetails', () => {
       const result = await resolveConnectorDetails({
         actionsClient: mockActionsClient,
         connectorId,
-        connectorName: 'My Custom Name',
+        connectorName: asNonEmpty('My Custom Name'),
         inference: mockInference,
         logger: mockLogger,
         request: mockRequest,
