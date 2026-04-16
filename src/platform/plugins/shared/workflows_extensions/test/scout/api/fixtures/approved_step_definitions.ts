@@ -45,27 +45,27 @@ export const APPROVED_STEP_DEFINITIONS: Array<{ id: string; handlerHash: string 
     handlerHash: '0223bec699354d5878732a6ebcb99a2b4b43a28b4f01da293df1ab7165c33e00',
   },
   {
-    id: 'attack-discovery.defaultAlertRetrieval',
+    id: 'security.attack-discovery.defaultAlertRetrieval',
     handlerHash: '51903792b14368b373f46bfe5fddff0c3ed5bb883dc4f293d801c97716f76e1a',
   },
   {
-    id: 'attack-discovery.defaultValidation',
+    id: 'security.attack-discovery.defaultValidation',
     handlerHash: 'c6175267207c257503b8fc188bb0678b80a12fd2621c23d7b123e6f4cf629193',
   },
   {
-    id: 'attack-discovery.generate',
+    id: 'security.attack-discovery.generate',
     handlerHash: 'b03302995ec48b6e593a49622ce6e96936c7b1044e9a3cfcc7601b41a4104339',
   },
   {
-    id: 'attack-discovery.notify',
+    id: 'security.attack-discovery.notify',
     handlerHash: '5b65590179a2d438d7206f6aed206a3074afdfe875eb4720c938433a1681b5e7',
   },
   {
-    id: 'attack-discovery.persistDiscoveries',
+    id: 'security.attack-discovery.persistDiscoveries',
     handlerHash: 'f08fb12ffe138fdf7fd3e95424db2a625da2fe2e5c7ab95f362fa73b0090c690',
   },
   {
-    id: 'attack-discovery.run',
+    id: 'security.attack-discovery.run',
     handlerHash: '79982c0abe31aa593b528807982c07f4949795341b252eea8daee9bef5a41771',
   },
   {

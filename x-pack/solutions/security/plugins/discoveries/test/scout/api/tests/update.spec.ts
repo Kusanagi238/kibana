@@ -125,8 +125,8 @@ apiTest.describe('Workflow schedule API - update', { tag: SCHEDULE_TAGS }, () =>
         },
         size: 20,
         workflow_config: {
+          alert_retrieval_mode: 'custom_only',
           alert_retrieval_workflow_ids: ['workflow-abc'],
-          default_alert_retrieval_mode: 'disabled',
           validation_workflow_id: 'custom-validation',
         },
       },

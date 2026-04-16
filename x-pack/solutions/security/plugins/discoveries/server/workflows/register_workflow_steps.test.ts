@@ -45,7 +45,7 @@ describe('registerWorkflowSteps', () => {
 
     expect(mockRegisterStepDefinition).toHaveBeenCalledWith(
       expect.objectContaining({
-        id: 'attack-discovery.defaultAlertRetrieval',
+        id: 'security.attack-discovery.defaultAlertRetrieval',
       })
     );
   });
@@ -55,7 +55,7 @@ describe('registerWorkflowSteps', () => {
 
     expect(mockRegisterStepDefinition).toHaveBeenCalledWith(
       expect.objectContaining({
-        id: 'attack-discovery.defaultValidation',
+        id: 'security.attack-discovery.defaultValidation',
       })
     );
   });
@@ -65,7 +65,7 @@ describe('registerWorkflowSteps', () => {
 
     expect(mockRegisterStepDefinition).toHaveBeenCalledWith(
       expect.objectContaining({
-        id: 'attack-discovery.generate',
+        id: 'security.attack-discovery.generate',
       })
     );
   });
@@ -75,7 +75,7 @@ describe('registerWorkflowSteps', () => {
 
     expect(mockRegisterStepDefinition).toHaveBeenCalledWith(
       expect.objectContaining({
-        id: 'attack-discovery.persistDiscoveries',
+        id: 'security.attack-discovery.persistDiscoveries',
       })
     );
   });
@@ -177,7 +177,7 @@ describe('registerWorkflowSteps', () => {
 
     expect(mockRegisterStepDefinition).toHaveBeenCalledWith(
       expect.objectContaining({
-        id: 'attack-discovery.generate',
+        id: 'security.attack-discovery.generate',
       })
     );
   });
@@ -189,7 +189,7 @@ describe('registerWorkflowSteps', () => {
 
     expect(mockRegisterStepDefinition).toHaveBeenCalledWith(
       expect.objectContaining({
-        id: 'attack-discovery.generate',
+        id: 'security.attack-discovery.generate',
       })
     );
   });
@@ -201,7 +201,7 @@ describe('registerWorkflowSteps', () => {
 
     expect(mockRegisterStepDefinition).toHaveBeenCalledWith(
       expect.objectContaining({
-        id: 'attack-discovery.generate',
+        id: 'security.attack-discovery.generate',
       })
     );
   });

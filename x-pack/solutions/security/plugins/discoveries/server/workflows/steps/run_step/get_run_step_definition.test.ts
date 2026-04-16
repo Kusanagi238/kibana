@@ -83,7 +83,7 @@ describe('getRunStepDefinition', () => {
       warn: jest.fn(),
     },
     stepId: 'run-step-1',
-    stepType: 'attack-discovery.run',
+    stepType: 'security.attack-discovery.run',
   };
 
   const syncMockContext = {
@@ -169,7 +169,7 @@ describe('getRunStepDefinition', () => {
     it('has the correct id', () => {
       const stepDefinition = getStepDefinition();
 
-      expect(stepDefinition.id).toBe('attack-discovery.run');
+      expect(stepDefinition.id).toBe('security.attack-discovery.run');
     });
   });
 
@@ -342,6 +342,93 @@ describe('getRunStepDefinition', () => {
       const callArgs = mockExecuteGenerationWorkflow.mock.calls[0][0];
 
       expect(callArgs.workflowConfig).not.toHaveProperty('additional_context');
+    });
+  });
+
+  describe('provided mode auto-detection', () => {
+    it('auto-detects provided mode when alerts are non-empty', async () => {
+      const contextWithAlerts = {
+        ...baseMockContext,
+        input: {
+          ...syncMockContext.input,
+          alert_retrieval_mode: 'custom_query' as const,
+          alerts: ['alert-string-1', 'alert-string-2'],
+        },
+      };
+
+      const stepDefinition = getStepDefinition();
+
+      await stepDefinition.handler(contextWithAlerts as never);
+
+      expect(mockExecuteGenerationWorkflow).toHaveBeenCalledWith(
+        expect.objectContaining({
+          alerts: ['alert-string-1', 'alert-string-2'],
+          workflowConfig: expect.objectContaining({
+            alert_retrieval_mode: 'provided',
+          }),
+        })
+      );
+    });
+
+    it('passes alerts to executeGenerationWorkflow when provided', async () => {
+      const contextWithAlerts = {
+        ...baseMockContext,
+        input: {
+          ...syncMockContext.input,
+          alerts: ['alert-string-1'],
+        },
+      };
+
+      const stepDefinition = getStepDefinition();
+
+      await stepDefinition.handler(contextWithAlerts as never);
+
+      expect(mockExecuteGenerationWorkflow).toHaveBeenCalledWith(
+        expect.objectContaining({
+          alerts: ['alert-string-1'],
+        })
+      );
+    });
+
+    it('does not override alert_retrieval_mode when alerts is empty', async () => {
+      const contextWithEmptyAlerts = {
+        ...baseMockContext,
+        input: {
+          ...syncMockContext.input,
+          alert_retrieval_mode: 'custom_query' as const,
+          alerts: [],
+        },
+      };
+
+      const stepDefinition = getStepDefinition();
+
+      await stepDefinition.handler(contextWithEmptyAlerts as never);
+
+      expect(mockExecuteGenerationWorkflow).toHaveBeenCalledWith(
+        expect.objectContaining({
+          workflowConfig: expect.objectContaining({
+            alert_retrieval_mode: 'custom_query',
+          }),
+        })
+      );
+    });
+
+    it('does not include alerts in executeParams when alerts is empty', async () => {
+      const contextWithEmptyAlerts = {
+        ...baseMockContext,
+        input: {
+          ...syncMockContext.input,
+          alerts: [],
+        },
+      };
+
+      const stepDefinition = getStepDefinition();
+
+      await stepDefinition.handler(contextWithEmptyAlerts as never);
+
+      const callArgs = mockExecuteGenerationWorkflow.mock.calls[0][0];
+
+      expect(callArgs).not.toHaveProperty('alerts');
     });
   });
 

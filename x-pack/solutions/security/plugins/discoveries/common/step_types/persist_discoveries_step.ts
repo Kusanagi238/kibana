@@ -12,7 +12,7 @@ import { StepCategory } from '@kbn/workflows';
 
 import { AnonymizedAlertSchema, ApiConfigSchema, AttackDiscoverySchema } from './shared_schemas';
 
-export const PersistDiscoveriesStepTypeId = 'attack-discovery.persistDiscoveries';
+export const PersistDiscoveriesStepTypeId = 'security.attack-discovery.persistDiscoveries';
 
 export const PersistDiscoveriesInputSchema = z.object({
   alerts_context_count: z.number().int(),
@@ -23,6 +23,14 @@ export const PersistDiscoveriesInputSchema = z.object({
   enable_field_rendering: z.boolean().optional().default(true),
   generation_uuid: z.string(),
   replacements: z.record(z.string(), z.string()).optional(),
+  /**
+   * The execution source. When 'scheduled', persistence is skipped because the
+   * alerting-framework executor (workflowExecutor) writes directly to the
+   * scheduled alerts index via alertsClient — writing here too would cause
+   * scheduled discoveries to appear in the ad-hoc index and leak onto the
+   * main Attack Discovery page.
+   */
+  source: z.string().optional(),
   with_replacements: z.boolean().optional().default(false),
 });
 

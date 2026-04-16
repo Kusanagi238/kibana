@@ -1,5 +1,5 @@
 version: '1'
-name: Attack discovery - Default alert retrieval
+name: Security - Attack discovery - Default alert retrieval
 description: |
   Retrieves alerts for Attack Discovery analysis via custom queries, or ES|QL.
   This is the DEFAULT alert retrieval workflow - for custom alert retrieval, create your own workflow.
@@ -69,7 +69,7 @@ inputs:
 
 steps:
   - name: retrieve_alerts
-    type: attack-discovery.defaultAlertRetrieval
+    type: security.attack-discovery.defaultAlertRetrieval
     timeout: '5m'
     with:
       alerts_index_pattern: '{%- if inputs.alerts_index_pattern -%}{{ inputs.alerts_index_pattern }}{%- else -%}.alerts-security.alerts-{{ workflow.spaceId }}{%- endif -%}'

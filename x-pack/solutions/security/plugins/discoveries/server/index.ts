@@ -39,6 +39,6 @@ export const config: PluginConfigDescriptor = {
 
 export const plugin = (context: PluginInitializerContext) => {
   const logger = context.logger.get();
-  logger.warn('🟢 discoveries: Plugin factory function called - creating plugin instance');
+  logger.debug(() => 'discoveries: Plugin factory function called - creating plugin instance');
   return new DiscoveriesPlugin(context);
 };

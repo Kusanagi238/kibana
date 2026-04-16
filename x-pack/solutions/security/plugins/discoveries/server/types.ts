@@ -41,8 +41,9 @@ export interface ElasticAssistantPluginSetup {
   ) => void;
 }
 
-// ElasticAssistantPluginStart will be imported when needed for graph invocation
-export type ElasticAssistantPluginStart = unknown; // TODO: properly type this when we wire up the dependency
+/** Minimal start contract — extend as capabilities are wired up. */
+// eslint-disable-next-line @typescript-eslint/no-empty-interface
+export interface ElasticAssistantPluginStart {}
 
 export interface DiscoveriesPluginSetupDeps {
   actions: ActionsPluginSetup;

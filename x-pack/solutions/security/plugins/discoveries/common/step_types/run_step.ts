@@ -15,7 +15,7 @@ import { AttackDiscoverySchema } from './shared_schemas';
 /**
  * Step type ID for the run step.
  */
-export const RunStepTypeId = 'attack-discovery.run';
+export const RunStepTypeId = 'security.attack-discovery.run';
 
 /**
  * Input schema for the Run step.
@@ -27,7 +27,7 @@ export const RunStepTypeId = 'attack-discovery.run';
 export const RunStepInputSchema = z.object({
   additional_context: z.string().optional(),
   alert_retrieval_mode: z
-    .enum(['custom_query', 'disabled', 'esql', 'provided'])
+    .enum(['custom_only', 'custom_query', 'esql', 'provided'])
     .optional()
     .default('custom_query'),
   alert_retrieval_workflow_ids: z.array(z.string()).optional().default([]),
@@ -37,7 +37,7 @@ export const RunStepInputSchema = z.object({
   esql_query: z.string().optional(),
   filter: z.record(z.string(), z.unknown()).optional(),
   mode: z.enum(['async', 'sync']).optional().default('sync'),
-  size: z.number().int().optional(),
+  size: z.number().int().optional().default(100),
   start: z.string().optional(),
   validation_workflow_id: z.string().optional().default(''),
 });

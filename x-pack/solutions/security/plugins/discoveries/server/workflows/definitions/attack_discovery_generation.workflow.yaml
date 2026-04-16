@@ -1,5 +1,5 @@
 version: '1'
-name: Attack discovery - Generation
+name: Security - Attack discovery - Generation
 description: |
   Generates Attack discoveries from the provided context. This workflow is for
   Generation only; (no Alert retrieval or validation steps are executed)
@@ -74,18 +74,19 @@ inputs:
       additionalProperties: true
       description: Elasticsearch query filter
       type: object
-    default_alert_retrieval_mode:
+    alert_retrieval_mode:
       default: 'custom_query'
       description: |
         Controls how the built-in default alert retrieval workflow operates.
-        Values: 'custom_query' (DSL-based), 'esql' (ES|QL query), 'disabled'.
+        Values: 'custom_query' (DSL-based), 'esql' (ES|QL query), 'custom_only' (skip built-in retrieval),
+        'provided' (alerts supplied directly via the `alerts` input; retrieval is skipped).
         This field is read but not acted upon by this workflow.
         The _generate endpoint handles retrieval orchestration.
       type: string
-      enum: ['disabled', 'esql', 'custom_query']
+      enum: ['custom_only', 'custom_query', 'esql', 'provided']
     esql_query:
       description: |
-        ES|QL query for alert retrieval (required when default_alert_retrieval_mode is 'esql').
+        ES|QL query for alert retrieval (required when alert_retrieval_mode is 'esql').
       type: string
     validation_workflow_id:
       default: 'default'
@@ -110,7 +111,7 @@ inputs:
 
 steps:
   - name: generate_discoveries
-    type: attack-discovery.generate
+    type: security.attack-discovery.generate
     timeout: '10m'
     with:
       additional_context: ${{ inputs.additional_context }}

@@ -43,12 +43,31 @@ export const getPersistDiscoveriesStepDefinition = ({
           enable_field_rendering: enableFieldRendering = true,
           generation_uuid: generationUuid,
           replacements,
+          source,
           with_replacements: withReplacements = false,
         } = context.input;
 
         const tracedLogger = createTracedLogger(logger, generationUuid);
 
         tracedLogger.info('[PERSIST] Handler starting...');
+
+        // Scheduled executions are persisted by the alerting-framework executor
+        // (workflowExecutor) via alertsClient, which writes to the dedicated
+        // scheduled alerts index. Writing here too would put scheduled
+        // discoveries into the ad-hoc index, causing them to appear on the
+        // main Attack Discovery page (which only queries the ad-hoc index).
+        if (source === 'scheduled') {
+          tracedLogger.info(
+            '[PERSIST] Skipping ad-hoc persistence for scheduled execution — alertsClient handles persistence to the scheduled index'
+          );
+
+          return {
+            output: {
+              duplicates_dropped_count: 0,
+              persisted_discoveries: [],
+            },
+          };
+        }
 
         if (attackDiscoveries.length === 0) {
           tracedLogger.info('[PERSIST] No discoveries to persist');

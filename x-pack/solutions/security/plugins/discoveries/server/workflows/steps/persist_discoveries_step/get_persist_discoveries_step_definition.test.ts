@@ -145,7 +145,7 @@ describe('getPersistDiscoveriesStepDefinition', () => {
         logger: mockLogger,
       });
 
-      expect(stepDefinition.id).toBe('attack-discovery.persistDiscoveries');
+      expect(stepDefinition.id).toBe('security.attack-discovery.persistDiscoveries');
     });
   });
 
@@ -238,6 +238,54 @@ describe('getPersistDiscoveriesStepDefinition', () => {
       expect(mockContext.logger.info).toHaveBeenCalledWith(
         expect.stringContaining('Persisting 1 attack discoveries')
       );
+    });
+  });
+
+  describe('when source is scheduled', () => {
+    it('skips persistence and returns empty output without calling validateAttackDiscoveries', async () => {
+      const scheduledContext = {
+        ...mockContext,
+        input: {
+          ...mockContext.input,
+          source: 'scheduled',
+        },
+      };
+
+      const stepDefinition = getPersistDiscoveriesStepDefinition({
+        adhocAttackDiscoveryDataClient: mockAdhocAttackDiscoveryDataClient,
+        getStartServices: mockGetStartServices,
+        logger: mockLogger,
+      });
+
+      const result = await stepDefinition.handler(scheduledContext as never);
+
+      const output = getOutputOrThrow(result);
+
+      expect(output).toEqual({
+        duplicates_dropped_count: 0,
+        persisted_discoveries: [],
+      });
+      expect(mockValidateAttackDiscoveries).not.toHaveBeenCalled();
+    });
+
+    it('does not call getStartServices for scheduled executions', async () => {
+      const scheduledContext = {
+        ...mockContext,
+        input: {
+          ...mockContext.input,
+          source: 'scheduled',
+        },
+      };
+
+      const stepDefinition = getPersistDiscoveriesStepDefinition({
+        adhocAttackDiscoveryDataClient: mockAdhocAttackDiscoveryDataClient,
+        getStartServices: mockGetStartServices,
+        logger: mockLogger,
+      });
+
+      await stepDefinition.handler(scheduledContext as never);
+
+      expect(mockGetStartServices).not.toHaveBeenCalled();
     });
   });
 

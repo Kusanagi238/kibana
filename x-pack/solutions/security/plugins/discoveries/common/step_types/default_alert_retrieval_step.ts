@@ -15,7 +15,7 @@ import { AnonymizedAlertSchema, ApiConfigSchema } from './shared_schemas';
 /**
  * Step type ID for the default alert retrieval step.
  */
-export const DefaultAlertRetrievalStepTypeId = 'attack-discovery.defaultAlertRetrieval';
+export const DefaultAlertRetrievalStepTypeId = 'security.attack-discovery.defaultAlertRetrieval';
 
 const AnonymizationFieldSchema = z.object({
   allowed: z.boolean().optional(),

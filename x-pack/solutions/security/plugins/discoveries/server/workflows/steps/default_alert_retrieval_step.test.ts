@@ -503,7 +503,9 @@ describe('DefaultAlertRetrievalStepDefinition', () => {
       const stepDefinition = createStepDefinition();
 
       expect(stepDefinition.id).toBe(DefaultAlertRetrievalStepTypeId);
-      expect(DefaultAlertRetrievalStepTypeId).toBe('attack-discovery.defaultAlertRetrieval');
+      expect(DefaultAlertRetrievalStepTypeId).toBe(
+        'security.attack-discovery.defaultAlertRetrieval'
+      );
     });
   });
 });

@@ -1,5 +1,5 @@
 version: '1'
-name: Attack discovery - Custom validation example
+name: Security - Attack discovery - Custom validation example
 description: |
   Demonstrates composability with production steps: validate discoveries
   (hallucination detection + dedup), apply a trivial transformation (sort by
@@ -80,7 +80,7 @@ inputs:
 steps:
   # Step 1: Filter hallucinated alert IDs and deduplicate discoveries
   - name: validate_discoveries
-    type: attack-discovery.defaultValidation
+    type: security.attack-discovery.defaultValidation
     with:
       alerts_context_count: ${{ inputs.alerts_context_count }}
       alerts_index_pattern: '{%- if inputs.alerts_index_pattern -%}{{ inputs.alerts_index_pattern }}{%- else -%}.alerts-security.alerts-{{ workflow.spaceId }}{%- endif -%}'
@@ -95,7 +95,7 @@ steps:
   # The `| sort: "title"` Liquid filter is a trivial transformation that
   # verifies data flows correctly through the pipeline.
   - name: persist_discoveries
-    type: attack-discovery.persistDiscoveries
+    type: security.attack-discovery.persistDiscoveries
     with:
       alerts_context_count: ${{ inputs.alerts_context_count }}
       anonymized_alerts: ${{ inputs.anonymized_alerts }}

@@ -16,7 +16,9 @@ describe('defaultValidationStepPublicDefinition', () => {
     });
 
     it('returns attack-discovery.defaultValidation', () => {
-      expect(defaultValidationStepPublicDefinition.id).toBe('attack-discovery.defaultValidation');
+      expect(defaultValidationStepPublicDefinition.id).toBe(
+        'security.attack-discovery.defaultValidation'
+      );
     });
   });
 
@@ -132,7 +134,7 @@ describe('defaultValidationStepPublicDefinition', () => {
     it.each(examples.map((example, index) => [index, example]))(
       'example %i references the correct step type',
       (_index, example) => {
-        expect(example).toContain('attack-discovery.defaultValidation');
+        expect(example).toContain('security.attack-discovery.defaultValidation');
       }
     );
   });

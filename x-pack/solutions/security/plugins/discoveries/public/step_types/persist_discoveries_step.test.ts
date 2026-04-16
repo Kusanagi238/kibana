@@ -16,7 +16,9 @@ describe('persistDiscoveriesStepPublicDefinition', () => {
     });
 
     it('returns attack-discovery.persistDiscoveries', () => {
-      expect(persistDiscoveriesStepPublicDefinition.id).toBe('attack-discovery.persistDiscoveries');
+      expect(persistDiscoveriesStepPublicDefinition.id).toBe(
+        'security.attack-discovery.persistDiscoveries'
+      );
     });
   });
 
@@ -132,7 +134,7 @@ describe('persistDiscoveriesStepPublicDefinition', () => {
     it.each(examples.map((example, index) => [index, example]))(
       'example %i references the correct step type',
       (_index, example) => {
-        expect(example).toContain('attack-discovery.persistDiscoveries');
+        expect(example).toContain('security.attack-discovery.persistDiscoveries');
       }
     );
   });

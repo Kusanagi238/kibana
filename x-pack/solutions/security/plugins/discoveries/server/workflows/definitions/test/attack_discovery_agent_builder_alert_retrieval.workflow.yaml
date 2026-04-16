@@ -1,5 +1,5 @@
 version: '1'
-name: Attack discovery - Agent builder alert retrieval (Test)
+name: Security - Attack discovery - Agent builder alert retrieval (Test)
 description: |
   Test workflow that uses the native `ai.agent` step type to invoke the
   Agent Builder and retrieve security alerts for Attack Discovery analysis.

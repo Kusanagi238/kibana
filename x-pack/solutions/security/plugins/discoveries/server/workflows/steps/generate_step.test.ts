@@ -692,7 +692,7 @@ describe('GenerateStepDefinition', () => {
     });
 
     it('has attack-discovery.generate as step type ID', () => {
-      expect(GenerateStepTypeId).toBe('attack-discovery.generate');
+      expect(GenerateStepTypeId).toBe('security.attack-discovery.generate');
     });
   });
 

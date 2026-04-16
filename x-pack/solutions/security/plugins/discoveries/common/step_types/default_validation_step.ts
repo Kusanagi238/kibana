@@ -15,7 +15,7 @@ import { AnonymizedAlertSchema, ApiConfigSchema, AttackDiscoverySchema } from '.
 /**
  * Step type ID for the default validation step.
  */
-export const DefaultValidationStepTypeId = 'attack-discovery.defaultValidation';
+export const DefaultValidationStepTypeId = 'security.attack-discovery.defaultValidation';
 
 /**
  * Input schema for Default Validation step.

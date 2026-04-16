@@ -2,6 +2,16 @@
 
 Integrates Attack Discovery with the Kibana Workflows engine.
 
+## Feature Flag
+
+Enable in `kibana.dev.yml`:
+
+```yaml
+feature_flags.overrides:
+  securitySolution.attackDiscoveryWorkflowsEnabled: true
+```
+
+
 ## Overview
 
 This plugin implements Attack Discovery 2.0 by decoupling alert retrieval, generation, and validation into customizable workflow steps. It provides:
@@ -16,36 +26,36 @@ This plugin implements Attack Discovery 2.0 by decoupling alert retrieval, gener
 
 ```
 ┌────────────────────────────────────────────────────────────────────┐
-│  @kbn/discoveries Package (server-only)                       │
-│  - LangGraph execution logic (graphs, orchestration)                │
-│  - Event logging utilities (shared with elastic_assistant)          │
-│  - Hallucination detection, anonymization, schedule transforms      │
-│  - Telemetry event definitions (EBT)                                │
+│  @kbn/discoveries Package (server-only)                            │
+│  - LangGraph execution logic (graphs, orchestration)               │
+│  - Event logging utilities (shared with elastic_assistant)         │
+│  - Hallucination detection, anonymization, schedule transforms     │
+│  - Telemetry event definitions (EBT)                               │
 └────────────────────────────────────────────────────────────────────┘
 ┌────────────────────────────────────────────────────────────────────┐
-│  @kbn/discoveries-schemas Package (shared-common)             │
-│  - OpenAPI schemas (.schema.yaml)                                   │
-│  - Generated TypeScript types and Zod validators (.gen.ts)          │
+│  @kbn/discoveries-schemas Package (shared-common)                  │
+│  - OpenAPI schemas (.schema.yaml)                                  │
+│  - Generated TypeScript types and Zod validators (.gen.ts)         │
 └────────────────────────────────────────────────────────────────────┘
                                │
                                ▼
-┌────────────────────────────────────────────────────────────────────┐
-│  discoveries Plugin                                           │
-│  ┌──────────────────────────────────────────────────────────────┐  │
-│  │  Internal APIs:                                               │  │
-│  │  - POST /internal/attack_discovery/_generate                │  │
-│  │  - POST /internal/attack_discovery/_validate                │  │
+┌──────────────────────────────────────────────────────────────────────┐
+│  discoveries Plugin                                                  │
+│  ┌────────────────────────────────────────────────────────────────┐  │
+│  │  Internal APIs:                                                │  │
+│  │  - POST /internal/attack_discovery/_generate                   │  │
+│  │  - POST /internal/attack_discovery/_validate                   │  │
 │  │  - Schedule CRUD (create/find/get/update/delete/enable/disable)│  │
-│  └──────────────────────────────────────────────────────────────┘  │
-│  ┌──────────────────────────────────────────────────────────────┐  │
-│  │  Workflow Steps:                                             │  │
-│  │  - attack-discovery.defaultAlertRetrieval                   │  │
-│  │  - attack-discovery.generate (with event logging)            │  │
-│  │  - attack-discovery.defaultValidation                        │  │
-│  │  - attack-discovery.persistDiscoveries                       │  │
-│  │  - attack-discovery.run (full pipeline in one step)          │  │
-│  └──────────────────────────────────────────────────────────────┘  │
-└────────────────────────────────────────────────────────────────────┘
+│  └────────────────────────────────────────────────────────────────┘  │
+│  ┌────────────────────────────────────────────────────────────────┐  │
+│  │  Workflow Steps:                                               │  │
+│  │  - attack-discovery.defaultAlertRetrieval                      │  │
+│  │  - attack-discovery.generate (with event logging)              │  │
+│  │  - attack-discovery.defaultValidation                          │  │
+│  │  - attack-discovery.persistDiscoveries                         │  │
+│  │  - attack-discovery.run (full pipeline in one step)            │  │
+│  └────────────────────────────────────────────────────────────────┘  │
+└──────────────────────────────────────────────────────────────────────┘
 ```
 
 ### Execution Flow
@@ -101,6 +111,24 @@ flowchart TB
     VALIDATE -->|"misconfiguration detected\n(missing index, bad connector)"| EBT
     Pipeline -->|step failure| EBT
 ```
+
+## Modes of Execution
+
+Attack Discovery can be triggered in three ways:
+
+### 1. Ad Hoc (Interactive UI)
+
+The user clicks **Run** in the Attack Discovery UI. The `useAttackDiscovery` hook calls `POST /internal/attack_discovery/_generate`, which fires the pipeline asynchronously and returns an `execution_uuid`. Results appear in the UI as they complete via the generations polling API.
+
+### 2. Scheduled (Alerting Framework)
+
+An alerting-framework rule fires on a configured cadence (e.g., every hour). The `workflowExecutor` registered with the Alerting Framework invokes the same `executeGenerationWorkflow` function as the ad-hoc path. Full throttling and frequency controls are enforced by the Alerting Framework. Schedule CRUD is exposed through the internal Schedule APIs.
+
+### 3. The `attack-discovery.run` Step (User-Authored Workflows)
+
+A user-authored workflow includes `attack-discovery.run` as a step. This is the composability path: the step can receive pre-retrieved alerts from upstream steps, customise retrieval mode, and return discoveries to downstream steps. The full pipeline (retrieve → generate → validate → persist) runs inside the step in either sync mode (returns discoveries inline) or async mode (returns `execution_uuid` immediately).
+
+See [Using the `attack-discovery.run` Step](#using-the-attack-discoveryrun-step) for a full guide.
 
 ## Internal APIs
 
@@ -266,6 +294,161 @@ High-level entry point that orchestrates the full Attack Discovery pipeline (ret
 - `execution_uuid`: Execution UUID for event log tracking
 - `alerts_context_count`: Number of alerts analyzed
 - `discovery_count`: Number of discoveries generated
+
+## Using the `attack-discovery.run` Step
+
+The `attack-discovery.run` step is the recommended entry point for triggering Attack Discovery from a user-authored workflow. `connector_id` is the only required field — all other inputs have sensible defaults.
+
+The **Security - Attack discovery - Run example** workflow ([`attack_discovery_run_example.workflow.yaml`](server/workflows/definitions/attack_discovery_run_example.workflow.yaml)) is a ready-made workflow that exposes all inputs and is ideal for desk-testing or as a starting template.
+
+### Quick Start (Minimal Input)
+
+Retrieve the 100 most recent security alerts and generate discoveries using all defaults:
+
+```json
+{
+  "connector_id": "<your-connector-id>"
+}
+```
+
+- `alert_retrieval_mode` defaults to `custom_query`
+- `size` defaults to `100`
+- `mode` defaults to `sync`
+- Response includes `attack_discoveries` inline
+
+### Retrieval Modes
+
+#### `custom_query` — DSL query with overrides (sync)
+
+Scope retrieval to a specific time range and alert severity:
+
+```json
+{
+  "connector_id": "<your-connector-id>",
+  "alert_retrieval_mode": "custom_query",
+  "size": 25,
+  "start": "now-72h",
+  "end": "now",
+  "filter": {
+    "term": {
+      "kibana.alert.severity": "critical"
+    }
+  }
+}
+```
+
+#### `esql` — ES|QL query (sync)
+
+Use an ES|QL query instead of DSL to retrieve alerts:
+
+```json
+{
+  "connector_id": "<your-connector-id>",
+  "alert_retrieval_mode": "esql",
+  "esql_query": "FROM .alerts-security.alerts-default | WHERE kibana.alert.severity == \"critical\" | LIMIT 50"
+}
+```
+
+#### ES|QL + custom retrieval workflow (sync)
+
+Merge ES|QL results with output from a custom alert retrieval workflow (parallel execution):
+
+```json
+{
+  "connector_id": "<your-connector-id>",
+  "alert_retrieval_mode": "esql",
+  "esql_query": "FROM .alerts-security.alerts-default | WHERE kibana.alert.severity == \"high\" | LIMIT 30",
+  "alert_retrieval_workflow_ids": ["<your-retrieval-workflow-id>"]
+}
+```
+
+Results from both sources are merged before generation.
+
+#### `provided` — Pre-retrieved alerts (auto-detected)
+
+Pass alerts directly via the `alerts` input. The step **auto-detects** that alerts are provided and sets `alert_retrieval_mode` to `provided`, skipping all retrieval:
+
+```json
+{
+  "connector_id": "<your-connector-id>",
+  "alerts": [
+    "Alert 1: Unusual process execution on host web-prod-01. Process: cmd.exe spawned by iis.exe.",
+    "Alert 2: Lateral movement detected. User admin logged in from 10.0.0.5 to 10.0.0.23 via PsExec.",
+    "Alert 3: Privilege escalation attempt. User admin added to Domain Admins group."
+  ]
+}
+```
+
+This is the **primary composability pattern**: an upstream workflow step populates `alerts`; the `attack-discovery.run` step generates discoveries without re-querying Elasticsearch.
+
+In a workflow YAML:
+
+```yaml
+- name: run_attack_discovery
+  type: attack-discovery.run
+  with:
+    alerts: ${{ steps.my_retrieval_step.output.alerts }}
+    connector_id: ${{ inputs.connector_id }}
+```
+
+#### `custom_only` — Custom retrieval workflows only
+
+Skips the built-in retrieval and uses **only** results from `alert_retrieval_workflow_ids`.
+
+### Async Mode
+
+#### Async, all defaults
+
+Fire the pipeline without waiting. Returns `execution_uuid` immediately; discoveries are written to Elasticsearch in the background:
+
+```json
+{
+  "connector_id": "<your-connector-id>",
+  "mode": "async"
+}
+```
+
+- Response body contains `execution_uuid` (no `attack_discoveries` field)
+- Check results via the Attack Discovery UI or `GET /api/attack_discovery/generations`
+
+#### Async with retrieval overrides
+
+```json
+{
+  "connector_id": "<your-connector-id>",
+  "mode": "async",
+  "alert_retrieval_mode": "custom_query",
+  "size": 50,
+  "start": "now-48h",
+  "end": "now"
+}
+```
+
+### Desk-Testing with the Example Workflow
+
+1. Navigate to **http://localhost:5601/app/workflows**
+2. Find the **Security - Attack discovery - Run example** workflow
+3. Click **Test Workflow**
+4. Select **Manual** as the trigger
+5. Paste one of the JSON blocks above into the input editor
+6. Click **Run** and observe the output
+
+To find your connector ID:
+
+```bash
+curl -s -u elastic:changeme \
+  'http://localhost:5601/api/actions/connectors' \
+  | jq '.[] | {id, name}'
+```
+
+### Troubleshooting
+
+| Problem | Solution |
+|---------|----------|
+| Workflow not found | Check **Workflows** → search for "Attack discovery - Run example"; restart Kibana if recently added |
+| `connector_id` not found | Run the connector list `curl` command above to find available IDs |
+| `provided` mode not auto-detected | Confirm `alerts` is a non-empty array of strings; explicit `alert_retrieval_mode` overrides auto-detection |
+| Async results not appearing | Wait 30–60 seconds; check the Attack Discovery UI; search logs for the `execution_uuid` |
 
 ## Event Logging
 
@@ -542,44 +725,6 @@ Issues are displayed in the validation callout:
 
 5. **Check EBT telemetry** for fleet-wide patterns — see the [Telemetry README](server/lib/telemetry/README.md) for `attack_discovery_misconfiguration` and `attack_discovery_step_failure` events.
 
-## Feature Flag
-
-Enable in `kibana.yml`:
-
-```yaml
-feature_flags.overrides:
-  securitySolution.attackDiscoveryWorkflowsEnabled: true
-```
-
-## Development Status
-
-**Completed:**
-- ✅ Package structure with OpenAPI schemas
-- ✅ Generated TypeScript types
-- ✅ Plugin scaffolding
-- ✅ Internal API routes
-- ✅ Workflow step definitions
-- ✅ Feature flag
-- ✅ `attack-discovery.defaultAlertRetrieval` step
-- ✅ `attack-discovery.generate` step with LangGraph execution
-- ✅ `attack-discovery.defaultValidation` step
-- ✅ `attack-discovery.persistDiscoveries` step
-- ✅ Event logging for generation tracking (shared utilities with elastic_assistant)
-- ✅ Comprehensive unit tests for event logging utilities
-- ✅ End-to-end workflow (retrieve → generate → validate)
-- ✅ Traced logger with `[execution: {uuid}]` prefix for all log messages
-- ✅ INFO-level execution summary with per-step status, timing, and workflow links
-- ✅ DEBUG-level health checks before each orchestration step
-- ✅ Startup health check in plugin `start()` lifecycle
-- ✅ Pre-execution validation (alerts index, connector, default workflows)
-- ✅ UI form validation with async workflow existence/enabled checks
-- ✅ EBT telemetry for misconfigurations and per-step failures
-- ✅ `attack-discovery.run` step (full pipeline in one step, sync/async modes)
-- ✅ Self-healing / workflow integrity verification (SHA-256 hash comparison, verify-and-repair)
-- ✅ Step registration error tracking (`StepRegistrationResult` with failed/registered lists)
-- ✅ Bundled YAML hash utility for integrity comparison (`get_bundled_yaml_entries`)
-- ✅ `workflow_modified` misconfiguration telemetry for self-healing events
-
 ## Dependencies
 
 - `@kbn/workflows-plugin` — Workflow engine (required)
@@ -708,15 +853,6 @@ The `POST /internal/attack_discovery/_generate` endpoint remains async (returns 
 3. **Event log contract**: The UI polls `GET /api/attack_discovery/generations` for status. This event-log-based contract allows multiple browser tabs and the scheduler to observe the same execution, which a synchronous response cannot support.
 4. **Retry safety**: If the browser disconnects during a long-running sync request, the generation is lost. With async, the pipeline runs server-side to completion regardless of client state.
 5. **Scheduling parity**: The alerting-framework scheduler (`workflowExecutor`) invokes the same `executeGenerationWorkflow` function. Making `_generate` async keeps the same code path for both triggers; a sync variant would need a separate code path.
-
-### Why `_generate/graph` Was Removed
-
-The `POST /internal/attack_discovery/_generate/graph` endpoint accepted pre-retrieved alerts and ran only the generation step (no validation, no persistence). It was removed because:
-
-1. **Orphaned results**: Generated discoveries were never persisted, so they were invisible to the UI and event log — effectively lost after the response.
-2. **Bypassed safety checks**: Skipping validation meant hallucinated alert IDs could appear in results without detection.
-3. **Superseded by `run` step**: The `run` step in sync mode provides the same "generate from pre-retrieved alerts" capability but with proper validation and a contract for returning results.
-4. **Maintenance cost**: Two generation endpoints with different validation behavior doubled the test surface without serving a real user need.
 
 ### Timeout Architecture
 

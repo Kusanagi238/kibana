@@ -90,17 +90,20 @@ export const getRunStepDefinition = ({
           connector_id: connectorId,
         };
 
+        // Auto-detect 'provided' mode when alerts are pre-supplied
+        const effectiveRetrievalMode =
+          alerts != null && alerts.length > 0 ? 'provided' : alertRetrievalMode;
+
         const workflowConfig: WorkflowConfig = {
           ...(additionalContext != null ? { additional_context: additionalContext } : {}),
+          alert_retrieval_mode: effectiveRetrievalMode,
           alert_retrieval_workflow_ids: alertRetrievalWorkflowIds,
-          default_alert_retrieval_mode:
-            alerts != null && alerts.length > 0 ? 'provided' : alertRetrievalMode,
           esql_query: esqlQuery,
-          provided_context: alerts,
           validation_workflow_id: validationWorkflowId,
         };
 
         const executeParams = {
+          ...(alerts != null && alerts.length > 0 ? { alerts } : {}),
           alertsIndexPattern: '.alerts-security.alerts-default',
           analytics,
           apiConfig,

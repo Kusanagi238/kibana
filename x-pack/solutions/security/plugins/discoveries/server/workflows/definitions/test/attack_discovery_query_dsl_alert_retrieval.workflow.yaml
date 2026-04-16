@@ -1,5 +1,5 @@
 version: '1'
-name: Attack discovery - Query DSL alert retrieval (Test)
+name: Security - Attack discovery - Query DSL alert retrieval (Test)
 description: |
   Test workflow that replicates the behavior of the ES|QL Example Alert
   Retrieval workflow, but uses an `elasticsearch.search` step with

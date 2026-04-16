@@ -63,8 +63,8 @@ export const getSimpleWorkflowSchedule = (
     },
     size: 20,
     workflow_config: {
+      alert_retrieval_mode: 'custom_query',
       alert_retrieval_workflow_ids: [],
-      default_alert_retrieval_mode: 'custom_query',
     },
   },
   schedule: {

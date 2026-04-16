@@ -16,7 +16,7 @@ describe('generateStepPublicDefinition', () => {
     });
 
     it('returns attack-discovery.generate', () => {
-      expect(generateStepPublicDefinition.id).toBe('attack-discovery.generate');
+      expect(generateStepPublicDefinition.id).toBe('security.attack-discovery.generate');
     });
   });
 
@@ -126,7 +126,7 @@ describe('generateStepPublicDefinition', () => {
     it.each(examples.map((example, index) => [index, example]))(
       'example %i references the correct step type',
       (_index, example) => {
-        expect(example).toContain('attack-discovery.generate');
+        expect(example).toContain('security.attack-discovery.generate');
       }
     );
   });

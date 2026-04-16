@@ -1,15 +1,64 @@
 version: '1'
-name: Attack discovery - Run example
+name: Security - Attack discovery - Run example
 description: |
-  Demonstrates the attack-discovery.run step, which orchestrates the full
-  Attack Discovery pipeline (alert retrieval → generation → validation) in a
-  single step.
+  Demonstrates the security.attack-discovery.run step, which orchestrates the
+  full Attack Discovery pipeline (alert retrieval → generation → validation →
+  persistence) in a single step. `connector_id` is the only required field.
 
-  This example showcases **provided mode** as the primary use case: a
-  detection rule or upstream workflow retrieves alerts and passes them via
-  the `alerts` input, making this workflow fully composable. All other
-  retrieval modes are exposed as optional inputs so the same workflow can
-  also run standalone.
+  ## Modes of execution
+
+  ### 1. All defaults (custom_query)
+  Retrieves the 100 most recent security alerts and generates discoveries.
+  ```json
+  { "connector_id": "<your-connector-id>" }
+  ```
+
+  ### 2. custom_query with overrides
+  Scope retrieval to a specific time range, alert count, and DSL filter.
+  ```json
+  {
+    "connector_id": "<your-connector-id>",
+    "alert_retrieval_mode": "custom_query",
+    "size": 25,
+    "start": "now-72h",
+    "end": "now",
+    "filter": { "term": { "kibana.alert.severity": "critical" } }
+  }
+  ```
+
+  ### 3. ES|QL retrieval
+  Retrieve alerts via an ES|QL query instead of DSL.
+  ```json
+  {
+    "connector_id": "<your-connector-id>",
+    "alert_retrieval_mode": "esql",
+    "esql_query": "FROM .alerts-security.alerts-default | WHERE kibana.alert.severity == \"critical\" | LIMIT 50"
+  }
+  ```
+
+  ### 4. Pre-retrieved alerts (provided)
+  Pass alerts directly — retrieval is skipped automatically when `alerts` is
+  non-empty. This is the primary composability pattern: an upstream step or
+  detection rule populates `alerts`; this step generates discoveries without
+  re-querying Elasticsearch.
+  ```json
+  {
+    "connector_id": "<your-connector-id>",
+    "alerts": [
+      "Alert 1: Unusual process execution on host web-prod-01. Process: cmd.exe spawned by iis.exe.",
+      "Alert 2: Lateral movement detected. User admin logged in from 10.0.0.5 to 10.0.0.23 via PsExec.",
+      "Alert 3: Privilege escalation attempt. User admin added to Domain Admins group."
+    ]
+  }
+  ```
+
+  ### 5. Async mode
+  Fire the pipeline without waiting. Returns `execution_uuid` immediately;
+  discoveries are written to Elasticsearch in the background. Can be combined
+  with any retrieval mode by adding the relevant inputs alongside `"mode": "async"`.
+  ```json
+  { "connector_id": "<your-connector-id>", "mode": "async" }
+  ```
 enabled: true
 tags:
   - Attack discovery
@@ -39,10 +88,11 @@ inputs:
         - custom_query: Retrieves alerts via DSL query (default when
           `alerts` is empty). Respects `start`, `end`, `size`, and `filter`.
         - esql: Retrieves alerts via the ES|QL query in `esql_query`.
-        - disabled: Skips alert retrieval entirely.
+        - custom_only: Skips the built-in retrieval; uses only results from
+          `alert_retrieval_workflow_ids` (custom retrieval workflows).
       enum:
+        - custom_only
         - custom_query
-        - disabled
         - esql
         - provided
       type: string
@@ -56,6 +106,7 @@ inputs:
         type: string
       type: array
     alerts:
+      default: []
       description: |
         Pre-retrieved anonymized alert texts. **Primary composability input.**
         When provided, alert retrieval is skipped automatically
@@ -99,6 +150,7 @@ inputs:
         - sync
       type: string
     size:
+      default: 100
       description: |
         Maximum number of alerts to retrieve. Applies to custom_query
         and esql retrieval modes.
@@ -120,7 +172,7 @@ inputs:
 
 steps:
   - name: run_attack_discovery
-    type: attack-discovery.run
+    type: security.attack-discovery.run
     timeout: '10m'
     with:
       # `alerts` is the primary composability point — when non-empty,

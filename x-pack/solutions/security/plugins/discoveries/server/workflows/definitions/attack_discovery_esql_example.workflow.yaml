@@ -1,5 +1,5 @@
 version: '1'
-name: Attack discovery - ES|QL example alert retrieval
+name: Security - Attack discovery - ES|QL example alert retrieval
 description: |
   Example workflow demonstrating custom alert retrieval using ES|QL.
   This serves as a reference for users creating their own retrieval workflows.

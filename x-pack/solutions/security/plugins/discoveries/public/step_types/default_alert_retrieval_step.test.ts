@@ -17,7 +17,7 @@ describe('defaultAlertRetrievalStepPublicDefinition', () => {
 
     it('returns attack-discovery.defaultAlertRetrieval', () => {
       expect(defaultAlertRetrievalStepPublicDefinition.id).toBe(
-        'attack-discovery.defaultAlertRetrieval'
+        'security.attack-discovery.defaultAlertRetrieval'
       );
     });
   });
@@ -136,7 +136,7 @@ describe('defaultAlertRetrievalStepPublicDefinition', () => {
     it.each(examples.map((example, index) => [index, example]))(
       'example %i references the correct step type',
       (_index, example) => {
-        expect(example).toContain('attack-discovery.defaultAlertRetrieval');
+        expect(example).toContain('security.attack-discovery.defaultAlertRetrieval');
       }
     );
   });

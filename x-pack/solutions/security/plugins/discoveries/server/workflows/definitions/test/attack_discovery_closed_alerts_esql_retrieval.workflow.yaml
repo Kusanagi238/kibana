@@ -1,5 +1,5 @@
 version: '1'
-name: Attack discovery - Closed alerts ES|QL retrieval (Test)
+name: Security - Attack discovery - Closed alerts ES|QL retrieval (Test)
 description: |
   Test workflow that retrieves closed security alerts using ES|QL.
 

@@ -15,7 +15,7 @@ import { ApiConfigSchema, AttackDiscoverySchema } from './shared_schemas';
 /**
  * Step type ID for the generate step.
  */
-export const GenerateStepTypeId = 'attack-discovery.generate';
+export const GenerateStepTypeId = 'security.attack-discovery.generate';
 
 /**
  * Input schema for Generate step.
