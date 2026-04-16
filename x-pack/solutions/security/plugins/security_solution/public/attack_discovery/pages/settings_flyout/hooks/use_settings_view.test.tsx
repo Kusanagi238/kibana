@@ -122,7 +122,7 @@ jest.mock('../workflow_configuration', () => ({
   }: {
     onChange: (config: {
       alertRetrievalWorkflowIds: string[];
-      defaultAlertRetrievalMode: string;
+      alertRetrievalMode: string;
       esqlQuery?: string;
       validationWorkflowId: string;
     }) => void;
@@ -133,7 +133,7 @@ jest.mock('../workflow_configuration', () => ({
         onClick={() =>
           onChange({
             alertRetrievalWorkflowIds: [],
-            defaultAlertRetrievalMode: 'custom_query',
+            alertRetrievalMode: 'custom_query',
             esqlQuery: 'FROM .alerts-security.alerts-default | LIMIT 200',
             validationWorkflowId: 'default',
           })
@@ -154,7 +154,7 @@ jest.mock('../workflow_configuration', () => ({
     updateSettings: jest.fn(),
     workflowConfiguration: {
       alertRetrievalWorkflowIds: [],
-      defaultAlertRetrievalMode: 'custom_query',
+      alertRetrievalMode: 'custom_query',
       validationWorkflowId: 'default',
     },
   }),
@@ -737,7 +737,7 @@ describe('useSettingsView', () => {
         updateSettings: jest.fn(),
         workflowConfiguration: {
           alertRetrievalWorkflowIds: [],
-          defaultAlertRetrievalMode: 'custom_query',
+          alertRetrievalMode: 'custom_query',
           validationWorkflowId: 'default',
         },
       });
@@ -779,7 +779,7 @@ describe('useSettingsView', () => {
         updateSettings: jest.fn(),
         workflowConfiguration: {
           alertRetrievalWorkflowIds: [],
-          defaultAlertRetrievalMode: 'custom_query',
+          alertRetrievalMode: 'custom_query',
           validationWorkflowId: 'default',
         },
       });
@@ -812,7 +812,7 @@ describe('useSettingsView', () => {
           updateSettings: jest.fn(),
           workflowConfiguration: {
             alertRetrievalWorkflowIds: [],
-            defaultAlertRetrievalMode: 'disabled',
+            alertRetrievalMode: 'custom_only',
             validationWorkflowId: 'default',
           },
         });
@@ -838,7 +838,7 @@ describe('useSettingsView', () => {
           updateSettings: jest.fn(),
           workflowConfiguration: {
             alertRetrievalWorkflowIds: [],
-            defaultAlertRetrievalMode: 'custom_query',
+            alertRetrievalMode: 'custom_query',
             validationWorkflowId: 'default',
           },
         });
@@ -864,7 +864,7 @@ describe('useSettingsView', () => {
           updateSettings: jest.fn(),
           workflowConfiguration: {
             alertRetrievalWorkflowIds: ['workflow-1'],
-            defaultAlertRetrievalMode: 'disabled',
+            alertRetrievalMode: 'custom_only',
             validationWorkflowId: 'default',
           },
         });
@@ -890,7 +890,7 @@ describe('useSettingsView', () => {
           updateSettings: jest.fn(),
           workflowConfiguration: {
             alertRetrievalWorkflowIds: [],
-            defaultAlertRetrievalMode: 'disabled',
+            alertRetrievalMode: 'custom_only',
             validationWorkflowId: '',
           },
         });
@@ -913,7 +913,7 @@ describe('useSettingsView', () => {
           updateSettings: jest.fn(),
           workflowConfiguration: {
             alertRetrievalWorkflowIds: [],
-            defaultAlertRetrievalMode: 'custom_query',
+            alertRetrievalMode: 'custom_query',
             validationWorkflowId: '',
           },
         });
@@ -939,7 +939,7 @@ describe('useSettingsView', () => {
           updateSettings: jest.fn(),
           workflowConfiguration: {
             alertRetrievalWorkflowIds: [],
-            defaultAlertRetrievalMode: 'custom_query',
+            alertRetrievalMode: 'custom_query',
             validationWorkflowId: 'default',
           },
         });
@@ -965,7 +965,7 @@ describe('useSettingsView', () => {
           updateSettings: jest.fn(),
           workflowConfiguration: {
             alertRetrievalWorkflowIds: [],
-            defaultAlertRetrievalMode: 'custom_query',
+            alertRetrievalMode: 'custom_query',
             validationWorkflowId: '',
           },
         });
@@ -987,7 +987,7 @@ describe('useSettingsView', () => {
         updateSettings: jest.fn(),
         workflowConfiguration: {
           alertRetrievalWorkflowIds: [],
-          defaultAlertRetrievalMode: 'disabled', // Invalid: no alert retrieval method enabled
+          alertRetrievalMode: 'custom_only', // Invalid: no alert retrieval method enabled
           validationWorkflowId: 'default',
         },
       });
@@ -1018,7 +1018,7 @@ describe('useSettingsView', () => {
         updateSettings: jest.fn(),
         workflowConfiguration: {
           alertRetrievalWorkflowIds: ['workflow-1'],
-          defaultAlertRetrievalMode: 'disabled',
+          alertRetrievalMode: 'custom_only',
           validationWorkflowId: 'default',
         },
       });
@@ -1042,7 +1042,7 @@ describe('useSettingsView', () => {
         updateSettings: jest.fn(),
         workflowConfiguration: {
           alertRetrievalWorkflowIds: [],
-          defaultAlertRetrievalMode: 'disabled',
+          alertRetrievalMode: 'custom_only',
           validationWorkflowId: 'default',
         },
       });
@@ -1070,7 +1070,7 @@ describe('useSettingsView', () => {
         updateSettings: jest.fn(),
         workflowConfiguration: {
           alertRetrievalWorkflowIds: [],
-          defaultAlertRetrievalMode: 'custom_query',
+          alertRetrievalMode: 'custom_query',
           validationWorkflowId: 'default',
         },
       });
@@ -1098,7 +1098,7 @@ describe('useSettingsView', () => {
         updateSettings: jest.fn(),
         workflowConfiguration: {
           alertRetrievalWorkflowIds: ['workflow-1'],
-          defaultAlertRetrievalMode: 'disabled',
+          alertRetrievalMode: 'custom_only',
           validationWorkflowId: 'default',
         },
       });
@@ -1143,7 +1143,7 @@ describe('useSettingsView', () => {
         updateSettings: jest.fn(),
         workflowConfiguration: {
           alertRetrievalWorkflowIds: [],
-          defaultAlertRetrievalMode: 'custom_query',
+          alertRetrievalMode: 'custom_query',
           validationWorkflowId: '', // Empty validation workflow
         },
       });
@@ -1171,7 +1171,7 @@ describe('useSettingsView', () => {
         updateSettings: jest.fn(),
         workflowConfiguration: {
           alertRetrievalWorkflowIds: [],
-          defaultAlertRetrievalMode: 'disabled',
+          alertRetrievalMode: 'custom_only',
           validationWorkflowId: '',
         },
       });
@@ -1204,7 +1204,7 @@ describe('useSettingsView', () => {
         updateSettings: jest.fn(),
         workflowConfiguration: {
           alertRetrievalWorkflowIds: [],
-          defaultAlertRetrievalMode: 'custom_query',
+          alertRetrievalMode: 'custom_query',
           validationWorkflowId: '',
         },
       });
@@ -1236,7 +1236,7 @@ describe('useSettingsView', () => {
           updateSettings: updateSettingsMock,
           workflowConfiguration: {
             alertRetrievalWorkflowIds: [],
-            defaultAlertRetrievalMode: 'custom_query',
+            alertRetrievalMode: 'custom_query',
             validationWorkflowId: 'default',
           },
         });
@@ -1273,7 +1273,7 @@ describe('useSettingsView', () => {
           updateSettings: updateSettingsMock,
           workflowConfiguration: {
             alertRetrievalWorkflowIds: [],
-            defaultAlertRetrievalMode: 'custom_query',
+            alertRetrievalMode: 'custom_query',
             validationWorkflowId: 'default',
           },
         });

@@ -67,13 +67,13 @@ jest.mock('../../workflow_settings_view/alert_retrieval_step/alert_retrieval_con
   }: {
     alertRetrievalHasError: boolean;
     connectorId: string | undefined;
-    workflowConfiguration: { defaultAlertRetrievalMode: string; esqlQuery?: string };
+    workflowConfiguration: { alertRetrievalMode: string; esqlQuery?: string };
   }) => (
     <div
       data-test-subj="alertRetrievalContent"
       data-alert-retrieval-has-error={String(alertRetrievalHasError)}
       data-connector-id={connectorId ?? ''}
-      data-default-alert-retrieval-mode={workflowConfiguration.defaultAlertRetrievalMode}
+      data-default-alert-retrieval-mode={workflowConfiguration.alertRetrievalMode}
       data-esql-query={workflowConfiguration.esqlQuery ?? ''}
     />
   ),
@@ -424,7 +424,7 @@ describe.skip('EditForm', () => {
       });
     });
 
-    it('passes the defaultAlertRetrievalMode to AlertRetrievalContent', async () => {
+    it('passes the alertRetrievalMode to AlertRetrievalContent', async () => {
       await renderWorkflowComponent();
 
       await waitFor(() => {
@@ -454,7 +454,7 @@ describe.skip('EditForm', () => {
     it('populates the form with saved workflow_config values', async () => {
       const savedWorkflowConfig = {
         alertRetrievalWorkflowIds: ['workflow-1'],
-        defaultAlertRetrievalMode: 'disabled' as const,
+        alertRetrievalMode: 'custom_only' as const,
         validationWorkflowId: 'custom-validation',
       };
 
@@ -521,7 +521,7 @@ describe.skip('EditForm', () => {
 
       const esqlWorkflowConfig = {
         alertRetrievalWorkflowIds: [],
-        defaultAlertRetrievalMode: 'esql' as const,
+        alertRetrievalMode: 'esql' as const,
         esqlQuery,
         validationWorkflowId: 'default',
       };
@@ -547,7 +547,7 @@ describe.skip('EditForm', () => {
         });
       };
 
-      it('passes defaultAlertRetrievalMode=esql to AlertRetrievalContent', async () => {
+      it('passes alertRetrievalMode=esql to AlertRetrievalContent', async () => {
         await renderEsqlComponent();
 
         await waitFor(() => {
