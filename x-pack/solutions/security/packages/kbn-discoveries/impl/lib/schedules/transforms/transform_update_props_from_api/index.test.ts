@@ -89,8 +89,8 @@ describe('transformUpdatePropsFromApi', () => {
 
   it('preserves existing workflowConfig when workflow_config is absent from the request', () => {
     const existingWorkflowConfig = {
+      alertRetrievalMode: 'esql' as const,
       alertRetrievalWorkflowIds: ['wf-existing-1'],
-      defaultAlertRetrievalMode: 'esql' as const,
       validationWorkflowId: 'wf-existing-validate',
     };
 
@@ -101,8 +101,8 @@ describe('transformUpdatePropsFromApi', () => {
 
   it('uses explicit workflow_config from the request even when existing config is provided', () => {
     const existingWorkflowConfig = {
+      alertRetrievalMode: 'esql' as const,
       alertRetrievalWorkflowIds: ['wf-existing-1'],
-      defaultAlertRetrievalMode: 'esql' as const,
       validationWorkflowId: 'wf-existing-validate',
     };
     const propsWithConfig: AttackDiscoveryScheduleUpdateProps = {
@@ -111,7 +111,7 @@ describe('transformUpdatePropsFromApi', () => {
         ...defaultApiUpdateProps.params,
         workflow_config: {
           alert_retrieval_workflow_ids: ['wf-request-1'],
-          default_alert_retrieval_mode: 'disabled',
+          alert_retrieval_mode: 'custom_only',
           validation_workflow_id: 'wf-request-validate',
         },
       },
@@ -121,7 +121,7 @@ describe('transformUpdatePropsFromApi', () => {
 
     expect(result.params.workflowConfig).toEqual({
       alertRetrievalWorkflowIds: ['wf-request-1'],
-      defaultAlertRetrievalMode: 'disabled',
+      alertRetrievalMode: 'custom_only',
       validationWorkflowId: 'wf-request-validate',
     });
   });
@@ -130,8 +130,8 @@ describe('transformUpdatePropsFromApi', () => {
     const result = transformUpdatePropsFromApi(defaultApiUpdateProps);
 
     expect(result.params.workflowConfig).not.toEqual({
+      alertRetrievalMode: 'custom_query',
       alertRetrievalWorkflowIds: [],
-      defaultAlertRetrievalMode: 'custom_query',
       validationWorkflowId: 'default',
     });
   });
@@ -143,7 +143,7 @@ describe('transformUpdatePropsFromApi', () => {
         ...defaultApiUpdateProps.params,
         workflow_config: {
           alert_retrieval_workflow_ids: ['wf-custom-1'],
-          default_alert_retrieval_mode: 'disabled',
+          alert_retrieval_mode: 'custom_only',
           validation_workflow_id: 'wf-custom-validate',
         },
       },
@@ -153,7 +153,7 @@ describe('transformUpdatePropsFromApi', () => {
 
     expect(result.params.workflowConfig).toEqual({
       alertRetrievalWorkflowIds: ['wf-custom-1'],
-      defaultAlertRetrievalMode: 'disabled',
+      alertRetrievalMode: 'custom_only',
       validationWorkflowId: 'wf-custom-validate',
     });
   });

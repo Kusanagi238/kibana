@@ -42,23 +42,17 @@ components:
           items:
             type: string
           default: []
-        default_alert_retrieval_mode:
+        alert_retrieval_mode:
           type: string
           description: Controls how the built-in default alert retrieval workflow operates
           enum:
-            - disabled
+            - custom_only
             - esql
             - custom_query
-            - provided
           default: custom_query
         esql_query:
           type: string
-          description: ES|QL query for alert retrieval (required when default_alert_retrieval_mode is 'esql')
-        provided_context:
-          type: array
-          description: Pre-formatted alert context strings to use when default_alert_retrieval_mode is 'provided'
-          items:
-            type: string
+          description: ES|QL query for alert retrieval (required when alert_retrieval_mode is 'esql')
         validation_workflow_id:
           type: string
           description: ID of the validation workflow to use (or 'default' for built-in)

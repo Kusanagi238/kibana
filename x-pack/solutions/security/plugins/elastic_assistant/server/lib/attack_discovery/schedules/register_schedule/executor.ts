@@ -205,11 +205,13 @@ export const attackDiscoveryScheduleExecutor = async ({
       duplicatesDroppedCount,
       durationMs,
       end: restParams.end,
+      execution_mode: 'legacy',
       hasFilter: !!(combinedFilter && Object.keys(combinedFilter).length),
       scheduleInfo,
       size: restParams.size,
       start: restParams.start,
       telemetry,
+      trigger: 'schedule',
     });
 
     /**
@@ -285,8 +287,10 @@ export const attackDiscoveryScheduleExecutor = async ({
     reportAttackDiscoveryGenerationFailure({
       apiConfig: params.apiConfig,
       errorMessage: transformedError.message,
+      execution_mode: 'legacy',
       scheduleInfo,
       telemetry,
+      trigger: 'schedule',
     });
 
     if (isInvalidAnonymizationError(error)) {

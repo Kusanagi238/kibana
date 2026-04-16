@@ -140,7 +140,7 @@ describe('updateAttackDiscoverySchedulesRoute', () => {
   it('preserves existing workflowConfig when updating a workflow-mode schedule', async () => {
     const mockWorkflowConfig = {
       alertRetrievalWorkflowIds: ['workflow-id-1'],
-      defaultAlertRetrievalMode: 'esql' as const,
+      alertRetrievalMode: 'esql' as const,
       validationWorkflowId: 'validation-1',
     };
     getAttackDiscoverySchedule.mockResolvedValue(
@@ -188,7 +188,7 @@ describe('updateAttackDiscoverySchedulesRoute', () => {
   it('returns 200 and does not expose workflowConfig in the response body', async () => {
     const mockWorkflowConfig = {
       alertRetrievalWorkflowIds: ['workflow-id-2'],
-      defaultAlertRetrievalMode: 'esql' as const,
+      alertRetrievalMode: 'esql' as const,
       validationWorkflowId: 'validation-2',
     };
     getAttackDiscoverySchedule.mockResolvedValue(

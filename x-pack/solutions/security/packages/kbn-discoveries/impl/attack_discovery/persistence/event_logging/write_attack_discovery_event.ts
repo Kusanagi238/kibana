@@ -118,6 +118,7 @@ export const writeAttackDiscoveryEvent = async ({
   message,
   newAlerts,
   outcome,
+  providedAlerts,
   reason,
   source = 'interactive',
   sourceMetadata,
@@ -219,6 +220,12 @@ export const writeAttackDiscoveryEvent = async ({
   workflowId?: string;
   /** The workflow run ID (kibana.alert.rule.execution.workflow_run_id) for this generation */
   workflowRunId?: string;
+  /**
+   * Pre-provided alert strings for 'provided' alert retrieval mode.
+   * Stored in event.reference so the pipeline_data route can surface them
+   * during the running state (before step.input is available).
+   */
+  providedAlerts?: string[];
 }) => {
   const alertsCountActive =
     alertsContextCount != null
@@ -254,6 +261,7 @@ export const writeAttackDiscoveryEvent = async ({
     ...(diagnosticsContext != null ? { diagnosticsContext } : {}),
     ...(errorCategory != null ? { errorCategory } : {}),
     ...(failedWorkflowId != null ? { failedWorkflowId } : {}),
+    ...(providedAlerts != null && providedAlerts.length > 0 ? { providedAlerts } : {}),
     ...(sourceMetadata != null ? { sourceMetadata } : {}),
     ...(validationSummary != null ? { validationSummary } : {}),
     ...(workflowExecutions != null ? workflowExecutions : {}),

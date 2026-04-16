@@ -179,6 +179,12 @@ export const parseErrorClassification = (parsed: unknown): ParsedErrorClassifica
   };
 };
 
+interface ParsedSourceMetadata {
+  action_execution_uuid?: string;
+  rule_id?: string;
+  rule_name?: string;
+}
+
 interface ParsedValidationSummary {
   duplicatesDroppedCount?: number;
   generatedCount: number;
@@ -188,6 +194,41 @@ interface ParsedValidationSummary {
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   value != null && typeof value === 'object';
+
+/**
+ * Parses sourceMetadata from a parsed event.reference JSON object.
+ * Maps camelCase event log fields to snake_case API fields.
+ * Returns null if sourceMetadata is absent or invalid (backward compat with old events).
+ */
+export const parseSourceMetadata = (parsed: unknown): ParsedSourceMetadata | null => {
+  if (!isRecord(parsed)) {
+    return null;
+  }
+
+  const metadata = parsed.sourceMetadata;
+
+  if (!isRecord(metadata)) {
+    return null;
+  }
+
+  const { actionExecutionUuid, ruleId, ruleName } = metadata;
+
+  if (
+    typeof actionExecutionUuid !== 'string' &&
+    typeof ruleId !== 'string' &&
+    typeof ruleName !== 'string'
+  ) {
+    return null;
+  }
+
+  return {
+    ...(typeof actionExecutionUuid === 'string'
+      ? { action_execution_uuid: actionExecutionUuid }
+      : {}),
+    ...(typeof ruleId === 'string' ? { rule_id: ruleId } : {}),
+    ...(typeof ruleName === 'string' ? { rule_name: ruleName } : {}),
+  };
+};
 
 /**
  * Parses validationSummary from a parsed event.reference JSON object.
@@ -425,6 +466,46 @@ const mergeWorkflowExecutionsFromReferenceBuckets = ({
 };
 
 /**
+ * Extracts sourceMetadata from event.reference buckets, returning the last non-null
+ * value found. The generation-started event for scheduled/action-triggered runs is the
+ * only event that writes sourceMetadata, so typically only one bucket will contain it.
+ */
+const parseSourceMetadataFromReferenceBuckets = ({
+  executionUuid,
+  logger,
+  workflowReferenceBuckets,
+}: {
+  executionUuid: string;
+  logger: Logger;
+  workflowReferenceBuckets: Array<{ key: string }> | undefined;
+}): ParsedSourceMetadata | undefined => {
+  if (!workflowReferenceBuckets || workflowReferenceBuckets.length === 0) {
+    return undefined;
+  }
+
+  let lastFound: ParsedSourceMetadata | null = null;
+
+  for (const bucket of workflowReferenceBuckets) {
+    try {
+      const parsed = JSON.parse(bucket.key) as unknown;
+      const metadata = parseSourceMetadata(parsed);
+      if (metadata != null) {
+        lastFound = metadata;
+      }
+    } catch (error) {
+      logger.debug(
+        () =>
+          `Failed to parse source metadata bucket for executionUuid ${executionUuid}: ${
+            error instanceof Error ? error.message : String(error)
+          }`
+      );
+    }
+  }
+
+  return lastFound ?? undefined;
+};
+
+/**
  * Extracts the validationSummary from event.reference buckets, returning the last non-null
  * value found. The validation-succeeded event is the only event that writes validationSummary,
  * so typically only one bucket will contain it.
@@ -563,6 +644,11 @@ export const transformGetAttackDiscoveryGenerationsSearchResult = ({
           logger,
           workflowReferenceBuckets: bucket.workflow_reference?.buckets,
         });
+        const sourceMetadata = parseSourceMetadataFromReferenceBuckets({
+          executionUuid,
+          logger,
+          workflowReferenceBuckets: bucket.workflow_reference?.buckets,
+        });
         const validationSummary = parseValidationSummaryFromReferenceBuckets({
           executionUuid,
           logger,
@@ -586,7 +672,10 @@ export const transformGetAttackDiscoveryGenerationsSearchResult = ({
           );
         }
 
-        if (loadingMessage == null) {
+        // loading_message is only written by the generation-started event; for terminal
+        // statuses the aggregation still returns that stale "started" value. We therefore
+        // only enforce its presence when the execution is still in progress.
+        if (status === 'started' && loadingMessage == null) {
           throw new Error(
             `Loading message (kibana.alert.rule.execution.status) is missing for executionUuid ${executionUuid}`
           );
@@ -614,11 +703,17 @@ export const transformGetAttackDiscoveryGenerationsSearchResult = ({
           ...(validationSummary?.hallucinationsFilteredCount != null
             ? { hallucinations_filtered_count: validationSummary.hallucinationsFilteredCount }
             : {}),
-          loading_message: loadingMessage,
+          // Only include loading_message while the execution is in progress;
+          // for terminal runs the aggregated value is always stale (only the
+          // generation-started event writes this field to the event log).
+          ...(status === 'started' && loadingMessage != null
+            ? { loading_message: loadingMessage }
+            : {}),
           ...(validationSummary?.persistedCount != null
             ? { persisted_count: validationSummary.persistedCount }
             : {}),
           reason: eventReason,
+          ...(sourceMetadata != null ? { source_metadata: sourceMetadata } : {}),
           start: generationStartTime,
           status,
           ...(stepEventActions != null ? { step_event_actions: stepEventActions } : {}),

@@ -107,9 +107,10 @@ export const AttackDiscoveryGeneration = lazySchema(() =>
      */
     hallucinations_filtered_count: z.number().int().optional(),
     /**
-     * Generation loading message (kibana.alert.rule.execution.status)
+     * Generation loading message (kibana.alert.rule.execution.status).
+     * Only present while status is 'started'; omitted for terminal runs.
      */
-    loading_message: z.string(),
+    loading_message: z.string().optional(),
     /**
      * The number of attack discoveries successfully persisted after deduplication and hallucination filtering
      */
@@ -119,6 +120,26 @@ export const AttackDiscoveryGeneration = lazySchema(() =>
      */
     reason: z.string().optional(),
     /**
+     * Source metadata for scheduled generations (rule_id, rule_name, action_execution_uuid)
+     */
+    source_metadata: z
+      .object({
+        /**
+         * The action execution UUID from the alerting framework
+         */
+        action_execution_uuid: z.string().optional(),
+        /**
+         * The ID of the alerting rule that triggered this generation
+         */
+        rule_id: z.string().optional(),
+        /**
+         * The name of the alerting rule that triggered this generation
+         */
+        rule_name: z.string().optional(),
+      })
+      .nullable()
+      .optional(),
+    /**
      * When generation started (min event.start)
      */
     start: z.string(),
@@ -127,17 +148,13 @@ export const AttackDiscoveryGeneration = lazySchema(() =>
      */
     status: z.enum(['canceled', 'dismissed', 'failed', 'started', 'succeeded']),
     /**
-     * Workflow step lifecycle actions (filtered event.action values) used to infer stubbed per-step execution status
+     * Synthesized per-step lifecycle markers (e.g. step-start, step-complete, step-fail) derived from raw event.action values. The array is ordered by step sequence (alert retrieval, generation, validation), with each step contributing 0-2 tokens that indicate its execution status.
      */
     step_event_actions: z.array(z.string()).optional(),
     /**
      * Workflow execution tracking for alert retrieval, generation, and validation workflows
      */
     workflow_executions: WorkflowExecutionsTracking.optional(),
-    /**
-     * The workflow definition ID for deep linking
-     */
-    workflow_id: z.string().optional(),
     /**
      * The workflow execution ID for monitoring
      */

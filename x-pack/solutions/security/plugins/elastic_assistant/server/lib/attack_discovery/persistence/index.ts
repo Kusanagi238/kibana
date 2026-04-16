@@ -219,20 +219,22 @@ export class AttackDiscoveryDataClient extends AIAssistantDataClient {
     authenticatedUser: AuthenticatedUser;
     eventLogIndex: string;
     getAttackDiscoveryGenerationsParams: {
+      end?: string;
+      scheduled?: boolean;
       size: number;
       start?: string;
-      end?: string;
     };
     logger: Logger;
     spaceId: string;
   }): Promise<GetAttackDiscoveryGenerationsResponse> => {
     const esClient = await this.options.elasticsearchClientPromise;
 
-    const { size, start, end } = getAttackDiscoveryGenerationsParams;
+    const { end, scheduled, size, start } = getAttackDiscoveryGenerationsParams;
     const generationsQuery = getAttackDiscoveryGenerationsQuery({
       authenticatedUser,
       end,
       eventLogIndex,
+      scheduled,
       size,
       spaceId,
       start,

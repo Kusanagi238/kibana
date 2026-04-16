@@ -48,8 +48,8 @@ export const transformUpdatePropsFromApi = (
         ? {
             alertRetrievalWorkflowIds:
               apiUpdateProps.params.workflow_config.alert_retrieval_workflow_ids,
-            defaultAlertRetrievalMode:
-              apiUpdateProps.params.workflow_config.default_alert_retrieval_mode ?? 'custom_query',
+            alertRetrievalMode:
+              apiUpdateProps.params.workflow_config.alert_retrieval_mode ?? 'custom_query',
             esqlQuery: apiUpdateProps.params.workflow_config.esql_query,
             validationWorkflowId: apiUpdateProps.params.workflow_config.validation_workflow_id,
           }

@@ -61,18 +61,14 @@ export const WorkflowConfig = z.object({
   /**
    * Controls how the built-in default alert retrieval workflow operates
    */
-  default_alert_retrieval_mode: z
-    .enum(['disabled', 'esql', 'custom_query', 'provided'])
+  alert_retrieval_mode: z
+    .enum(['custom_only', 'esql', 'custom_query'])
     .optional()
     .default('custom_query'),
   /**
-   * ES|QL query for alert retrieval (required when default_alert_retrieval_mode is 'esql')
+   * ES|QL query for alert retrieval (required when alert_retrieval_mode is 'esql')
    */
   esql_query: z.string().optional(),
-  /**
-   * Pre-formatted alert context strings to use when default_alert_retrieval_mode is 'provided'
-   */
-  provided_context: z.array(z.string()).optional(),
   /**
    * ID of the validation workflow to use (or 'default' for built-in)
    */

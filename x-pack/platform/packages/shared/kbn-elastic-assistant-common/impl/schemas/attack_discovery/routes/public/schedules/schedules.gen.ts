@@ -68,8 +68,8 @@ export const AttackDiscoveryScheduleParams = lazySchema(() =>
     workflowConfig: z
       .object({
         alertRetrievalWorkflowIds: z.array(z.string()).optional().default([]),
-        defaultAlertRetrievalMode: z
-          .enum(['disabled', 'esql', 'custom_query', 'provided'])
+        alertRetrievalMode: z
+          .enum(['custom_only', 'esql', 'custom_query'])
           .optional()
           .default('custom_query'),
         esqlQuery: z.string().optional(),

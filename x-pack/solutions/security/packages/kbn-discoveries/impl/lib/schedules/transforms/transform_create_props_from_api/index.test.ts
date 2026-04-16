@@ -83,8 +83,8 @@ describe('transformCreatePropsFromApi', () => {
         size: 100,
         start: 'now-24h',
         workflowConfig: {
+          alertRetrievalMode: 'custom_query',
           alertRetrievalWorkflowIds: [],
-          defaultAlertRetrievalMode: 'custom_query',
           validationWorkflowId: 'default',
         },
       },
@@ -122,7 +122,7 @@ describe('transformCreatePropsFromApi', () => {
 
     expect(result.params.workflowConfig).toEqual({
       alertRetrievalWorkflowIds: [],
-      defaultAlertRetrievalMode: 'custom_query',
+      alertRetrievalMode: 'custom_query',
       validationWorkflowId: 'default',
     });
   });
@@ -133,8 +133,8 @@ describe('transformCreatePropsFromApi', () => {
       params: {
         ...defaultApiCreateProps.params,
         workflow_config: {
+          alert_retrieval_mode: 'custom_only',
           alert_retrieval_workflow_ids: ['wf-custom-1', 'wf-custom-2'],
-          default_alert_retrieval_mode: 'disabled',
           validation_workflow_id: 'wf-custom-validate',
         },
       },
@@ -143,8 +143,8 @@ describe('transformCreatePropsFromApi', () => {
     const result = transformCreatePropsFromApi(propsWithConfig);
 
     expect(result.params.workflowConfig).toEqual({
+      alertRetrievalMode: 'custom_only',
       alertRetrievalWorkflowIds: ['wf-custom-1', 'wf-custom-2'],
-      defaultAlertRetrievalMode: 'disabled',
       validationWorkflowId: 'wf-custom-validate',
     });
   });

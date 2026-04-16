@@ -5,10 +5,49 @@
  * 2.0.
  */
 
-import type { EventTypeOpts } from '@kbn/core/server';
+import type { EventTypeOpts, SchemaValue } from '@kbn/core/server';
 
 import type { ErrorCategory } from '@kbn/discoveries-schemas';
 export type { ErrorCategory } from '@kbn/discoveries-schemas';
+
+export interface ScheduleInfo {
+  id: string;
+  interval: string;
+  actions: string[];
+}
+
+const scheduleInfoSchema: SchemaValue<ScheduleInfo | undefined> = {
+  properties: {
+    id: {
+      type: 'keyword',
+      _meta: {
+        description: 'Attack discovery schedule id',
+      },
+    },
+    interval: {
+      type: 'keyword',
+      _meta: {
+        description: 'Attack discovery schedule interval',
+      },
+    },
+    actions: {
+      type: 'array',
+      items: {
+        type: 'keyword',
+        _meta: {
+          description: 'Action type',
+        },
+      },
+      _meta: {
+        description: 'Actions used within the schedule',
+      },
+    },
+  },
+  _meta: {
+    description: 'Attack discovery schedule info',
+    optional: true,
+  },
+};
 
 /**
  * Workflow-augmented attack discovery success event.
@@ -25,7 +64,7 @@ export const WORKFLOW_ATTACK_DISCOVERY_SUCCESS_EVENT: EventTypeOpts<{
   configuredAlertsCount: number;
   custom_retrieval_workflow_count?: number;
   dateRangeDuration: number;
-  default_alert_retrieval_mode?: string;
+  alert_retrieval_mode?: string;
   discoveriesGenerated: number;
   duplicatesDroppedCount?: number;
   durationMs: number;
@@ -37,6 +76,7 @@ export const WORKFLOW_ATTACK_DISCOVERY_SUCCESS_EVENT: EventTypeOpts<{
   prebuilt_step_types_used?: string[];
   provider?: string;
   retrieval_workflow_count?: number;
+  scheduleInfo?: ScheduleInfo;
   trigger?: string;
   uses_default_retrieval?: boolean;
   uses_default_validation?: boolean;
@@ -74,10 +114,10 @@ export const WORKFLOW_ATTACK_DISCOVERY_SUCCESS_EVENT: EventTypeOpts<{
       type: 'integer',
       _meta: { description: 'Duration of time range of request in hours', optional: false },
     },
-    default_alert_retrieval_mode: {
+    alert_retrieval_mode: {
       type: 'keyword',
       _meta: {
-        description: 'The default alert retrieval mode (custom_query/esql/disabled)',
+        description: 'The alert retrieval mode (custom_query/esql/custom_only/provided)',
         optional: true,
       },
     },
@@ -99,7 +139,7 @@ export const WORKFLOW_ATTACK_DISCOVERY_SUCCESS_EVENT: EventTypeOpts<{
     execution_mode: {
       type: 'keyword',
       _meta: {
-        description: 'Execution mode (workflow)',
+        description: 'Execution mode (workflow/legacy)',
         optional: true,
       },
     },
@@ -147,10 +187,11 @@ export const WORKFLOW_ATTACK_DISCOVERY_SUCCESS_EVENT: EventTypeOpts<{
       type: 'integer',
       _meta: { description: 'Total number of retrieval workflows executed', optional: true },
     },
+    scheduleInfo: scheduleInfoSchema,
     trigger: {
       type: 'keyword',
       _meta: {
-        description: 'What triggered the generation (manual/scheduled)',
+        description: 'What triggered the generation (manual/schedule/workflow/unknown)',
         optional: true,
       },
     },
@@ -219,6 +260,7 @@ export const WORKFLOW_ATTACK_DISCOVERY_ERROR_EVENT: EventTypeOpts<{
   misconfiguration_detected?: boolean;
   model?: string;
   provider?: string;
+  scheduleInfo?: ScheduleInfo;
   trigger?: string;
 }> = {
   eventType: 'attack_discovery_error',
@@ -234,7 +276,7 @@ export const WORKFLOW_ATTACK_DISCOVERY_ERROR_EVENT: EventTypeOpts<{
     execution_mode: {
       type: 'keyword',
       _meta: {
-        description: 'Execution mode (workflow)',
+        description: 'Execution mode (workflow/legacy)',
         optional: true,
       },
     },
@@ -261,10 +303,11 @@ export const WORKFLOW_ATTACK_DISCOVERY_ERROR_EVENT: EventTypeOpts<{
       type: 'keyword',
       _meta: { description: 'OpenAI provider', optional: true },
     },
+    scheduleInfo: scheduleInfoSchema,
     trigger: {
       type: 'keyword',
       _meta: {
-        description: 'What triggered the generation (manual/scheduled)',
+        description: 'What triggered the generation (manual/schedule/workflow/unknown)',
         optional: true,
       },
     },

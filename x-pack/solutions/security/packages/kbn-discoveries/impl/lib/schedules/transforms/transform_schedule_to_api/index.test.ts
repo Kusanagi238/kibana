@@ -121,8 +121,8 @@ describe('transformScheduleToApi', () => {
         },
         size: 100,
         workflowConfig: {
+          alertRetrievalMode: 'custom_only',
           alertRetrievalWorkflowIds: ['workflow-1', 'workflow-2'],
-          defaultAlertRetrievalMode: 'disabled',
           validationWorkflowId: 'custom-validation',
         },
       },
@@ -131,8 +131,8 @@ describe('transformScheduleToApi', () => {
     const result = transformScheduleToApi(mockSchedule);
 
     expect(result.params.workflow_config).toEqual({
+      alert_retrieval_mode: 'custom_only',
       alert_retrieval_workflow_ids: ['workflow-1', 'workflow-2'],
-      default_alert_retrieval_mode: 'disabled',
       validation_workflow_id: 'custom-validation',
     });
   });

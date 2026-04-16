@@ -10,8 +10,8 @@ import type { AttackDiscoveryScheduleCreateProps as AttackDiscoveryScheduleCreat
 import { transformActionsFromApi } from '../transform_actions_from_api';
 
 const DEFAULT_WORKFLOW_CONFIG = {
+  alertRetrievalMode: 'custom_query' as const,
   alertRetrievalWorkflowIds: [] as string[],
-  defaultAlertRetrievalMode: 'custom_query' as const,
   validationWorkflowId: 'default',
 };
 
@@ -50,8 +50,8 @@ export const transformCreatePropsFromApi = (
         ? {
             alertRetrievalWorkflowIds:
               apiCreateProps.params.workflow_config.alert_retrieval_workflow_ids,
-            defaultAlertRetrievalMode:
-              apiCreateProps.params.workflow_config.default_alert_retrieval_mode ?? 'custom_query',
+            alertRetrievalMode:
+              apiCreateProps.params.workflow_config.alert_retrieval_mode ?? 'custom_query',
             esqlQuery: apiCreateProps.params.workflow_config.esql_query,
             validationWorkflowId: apiCreateProps.params.workflow_config.validation_workflow_id,
           }

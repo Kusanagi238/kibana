@@ -9,6 +9,7 @@ import { loggingSystemMock } from '@kbn/core/server/mocks';
 
 import {
   parseErrorClassification,
+  parseSourceMetadata,
   parseValidationSummary,
   transformGetAttackDiscoveryGenerationsSearchResult,
 } from '.';
@@ -83,7 +84,6 @@ describe('transformGetAttackDiscoveryGenerationsSearchResult', () => {
         end: '2025-07-30T00:00:00Z',
         execution_uuid: 'exec-uuid-1',
         generation_start_time: '2025-07-29T00:00:00Z',
-        loading_message: 'Loading...',
         reason: 'test-reason',
         start: '2025-07-29T00:00:00Z',
         status: 'succeeded',
@@ -279,7 +279,6 @@ describe('transformGetAttackDiscoveryGenerationsSearchResult', () => {
         end: '2025-07-30T00:00:00Z',
         execution_uuid: 'exec-uuid-1',
         generation_start_time: '2025-07-29T00:00:00Z',
-        loading_message: 'Loading...',
         reason: 'test-reason',
         start: '2025-07-29T00:00:00Z',
         status: 'succeeded',
@@ -293,7 +292,6 @@ describe('transformGetAttackDiscoveryGenerationsSearchResult', () => {
         end: '2025-07-31T00:00:00Z',
         execution_uuid: 'exec-uuid-2',
         generation_start_time: '2025-07-30T00:00:00Z',
-        loading_message: 'Loading2...',
         reason: 'test-reason-2',
         start: '2025-07-30T00:00:00Z',
         status: 'succeeded',
@@ -303,13 +301,44 @@ describe('transformGetAttackDiscoveryGenerationsSearchResult', () => {
     ]);
   });
 
-  it('skips a bucket with a missing loading_message', () => {
+  it('skips a started bucket with a missing loading_message', () => {
     const rawResponse = {
       aggregations: {
         generations: {
           buckets: [
             {
               key: 'exec-uuid-4',
+              doc_count: 1,
+              alerts_context_count: { value: 1 },
+              connector_id: { buckets: [{ key: 'test-connector', doc_count: 1 }] },
+              discoveries: { value: 0 },
+              event_actions: {
+                buckets: [
+                  { key: 'generation-started', doc_count: 1 }, // only started, no terminal action
+                ],
+              },
+              event_reason: { buckets: [{ key: 'test-reason', doc_count: 1 }] },
+              loading_message: { buckets: [] }, // empty buckets — missing for in-progress run
+              generation_end_time: { value_as_string: null },
+              generation_start_time: { value_as_string: '2025-07-29T00:00:00Z' },
+            },
+          ],
+        },
+      },
+    };
+
+    const result = transformGetAttackDiscoveryGenerationsSearchResult({ rawResponse, logger });
+
+    expect(result.generations.length).toBe(0);
+  });
+
+  it('includes a succeeded bucket when loading_message is absent', () => {
+    const rawResponse = {
+      aggregations: {
+        generations: {
+          buckets: [
+            {
+              key: 'exec-uuid-5',
               doc_count: 1,
               alerts_context_count: { value: 1 },
               connector_id: { buckets: [{ key: 'test-connector', doc_count: 1 }] },
@@ -321,7 +350,7 @@ describe('transformGetAttackDiscoveryGenerationsSearchResult', () => {
                 ],
               },
               event_reason: { buckets: [{ key: 'test-reason', doc_count: 1 }] },
-              loading_message: { buckets: [] }, // empty buckets means no loading message
+              loading_message: { buckets: [] }, // absent for completed run — should not cause a skip
               generation_end_time: { value_as_string: '2025-07-30T00:00:00Z' },
               generation_start_time: { value_as_string: '2025-07-29T00:00:00Z' },
             },
@@ -332,7 +361,8 @@ describe('transformGetAttackDiscoveryGenerationsSearchResult', () => {
 
     const result = transformGetAttackDiscoveryGenerationsSearchResult({ rawResponse, logger });
 
-    expect(result.generations.length).toBe(0);
+    expect(result.generations.length).toBe(1);
+    expect(result.generations[0].loading_message).toBeUndefined();
   });
 
   it('skips a bucket with a null executionUuid key', () => {
@@ -1314,6 +1344,258 @@ describe('transformGetAttackDiscoveryGenerationsSearchResult', () => {
 
       expect(result.generations[0].error_category).toBeUndefined();
       expect(result.generations[0].failed_workflow_id).toBeUndefined();
+    });
+  });
+
+  describe('parseSourceMetadata', () => {
+    it('extracts all three fields when all are present', () => {
+      const parsed = {
+        sourceMetadata: {
+          actionExecutionUuid: 'action-exec-uuid-123',
+          ruleId: 'rule-abc-456',
+          ruleName: 'My Alert Rule',
+        },
+      };
+
+      expect(parseSourceMetadata(parsed)).toEqual({
+        action_execution_uuid: 'action-exec-uuid-123',
+        rule_id: 'rule-abc-456',
+        rule_name: 'My Alert Rule',
+      });
+    });
+
+    it('extracts only rule_id and rule_name when actionExecutionUuid is absent', () => {
+      const parsed = {
+        sourceMetadata: {
+          ruleId: 'rule-abc-456',
+          ruleName: 'My Alert Rule',
+        },
+      };
+
+      expect(parseSourceMetadata(parsed)).toEqual({
+        rule_id: 'rule-abc-456',
+        rule_name: 'My Alert Rule',
+      });
+    });
+
+    it('extracts only rule_id when ruleName and actionExecutionUuid are absent', () => {
+      const parsed = { sourceMetadata: { ruleId: 'rule-abc-456' } };
+
+      expect(parseSourceMetadata(parsed)).toEqual({ rule_id: 'rule-abc-456' });
+    });
+
+    it('returns null when sourceMetadata is missing', () => {
+      expect(parseSourceMetadata({ workflowExecutions: {} })).toBeNull();
+    });
+
+    it('returns null when parsed is not a record', () => {
+      expect(parseSourceMetadata(null)).toBeNull();
+      expect(parseSourceMetadata(undefined)).toBeNull();
+      expect(parseSourceMetadata('string')).toBeNull();
+      expect(parseSourceMetadata(42)).toBeNull();
+    });
+
+    it('returns null when sourceMetadata is not a record', () => {
+      expect(parseSourceMetadata({ sourceMetadata: 'invalid' })).toBeNull();
+      expect(parseSourceMetadata({ sourceMetadata: null })).toBeNull();
+      expect(parseSourceMetadata({ sourceMetadata: 42 })).toBeNull();
+    });
+
+    it('returns null when all sourceMetadata fields are non-string', () => {
+      expect(parseSourceMetadata({ sourceMetadata: { ruleId: 123, ruleName: null } })).toBeNull();
+    });
+
+    it('omits fields that are not strings', () => {
+      const parsed = {
+        sourceMetadata: {
+          actionExecutionUuid: null,
+          ruleId: 'rule-abc-456',
+          ruleName: 42,
+        },
+      };
+
+      expect(parseSourceMetadata(parsed)).toEqual({ rule_id: 'rule-abc-456' });
+    });
+  });
+
+  describe('source_metadata fields in transform output', () => {
+    const buildRawResponseWithReference = (referenceJson: unknown) => ({
+      aggregations: {
+        generations: {
+          buckets: [
+            {
+              key: 'exec-uuid-source-meta',
+              doc_count: 1,
+              alerts_context_count: { value: 10 },
+              connector_id: { buckets: [{ key: 'test-connector', doc_count: 1 }] },
+              discoveries: { value: 3 },
+              event_actions: {
+                buckets: [
+                  { key: 'generation-started', doc_count: 1 },
+                  { key: 'generation-succeeded', doc_count: 1 },
+                ],
+              },
+              event_reason: { buckets: [] },
+              loading_message: { buckets: [{ key: 'Loading...', doc_count: 1 }] },
+              generation_end_time: { value_as_string: '2025-08-01T00:00:00Z' },
+              generation_start_time: { value_as_string: '2025-07-31T00:00:00Z' },
+              workflow_reference: {
+                buckets: [{ key: JSON.stringify(referenceJson), doc_count: 1 }],
+              },
+            },
+          ],
+        },
+      },
+    });
+
+    it('includes source_metadata in the response when sourceMetadata is in event.reference', () => {
+      const rawResponse = buildRawResponseWithReference({
+        sourceMetadata: {
+          actionExecutionUuid: 'action-exec-uuid-123',
+          ruleId: 'rule-abc-456',
+          ruleName: 'My Alert Rule',
+        },
+      });
+
+      const result = transformGetAttackDiscoveryGenerationsSearchResult({ logger, rawResponse });
+
+      expect(result.generations[0].source_metadata).toEqual({
+        action_execution_uuid: 'action-exec-uuid-123',
+        rule_id: 'rule-abc-456',
+        rule_name: 'My Alert Rule',
+      });
+    });
+
+    it('returns undefined source_metadata for events without sourceMetadata', () => {
+      const rawResponse = buildRawResponseWithReference({
+        alertRetrieval: null,
+        generation: { workflowId: 'gen-wf', workflowRunId: 'gen-run-1' },
+        validation: null,
+      });
+
+      const result = transformGetAttackDiscoveryGenerationsSearchResult({ logger, rawResponse });
+
+      expect(result.generations[0].source_metadata).toBeUndefined();
+    });
+
+    it('returns undefined source_metadata when workflow_reference is absent', () => {
+      const rawResponse = {
+        aggregations: {
+          generations: {
+            buckets: [
+              {
+                key: 'exec-uuid-no-ref',
+                doc_count: 1,
+                alerts_context_count: { value: 5 },
+                connector_id: { buckets: [{ key: 'test-connector', doc_count: 1 }] },
+                discoveries: { value: 3 },
+                event_actions: {
+                  buckets: [
+                    { key: 'generation-started', doc_count: 1 },
+                    { key: 'generation-succeeded', doc_count: 1 },
+                  ],
+                },
+                event_reason: { buckets: [] },
+                loading_message: { buckets: [{ key: 'Loading...', doc_count: 1 }] },
+                generation_end_time: { value_as_string: '2025-08-01T00:00:00Z' },
+                generation_start_time: { value_as_string: '2025-07-31T00:00:00Z' },
+              },
+            ],
+          },
+        },
+      };
+
+      const result = transformGetAttackDiscoveryGenerationsSearchResult({ logger, rawResponse });
+
+      expect(result.generations[0].source_metadata).toBeUndefined();
+    });
+
+    it('returns the last non-null sourceMetadata when multiple buckets are present', () => {
+      const bucket1 = JSON.stringify({
+        sourceMetadata: { ruleId: 'rule-first', ruleName: 'First Rule' },
+      });
+      const bucket2 = JSON.stringify({
+        sourceMetadata: {
+          actionExecutionUuid: 'action-uuid-final',
+          ruleId: 'rule-final',
+          ruleName: 'Final Rule',
+        },
+      });
+
+      const rawResponse = {
+        aggregations: {
+          generations: {
+            buckets: [
+              {
+                key: 'exec-uuid-multi-meta',
+                doc_count: 2,
+                alerts_context_count: { value: 10 },
+                connector_id: { buckets: [{ key: 'test-connector', doc_count: 2 }] },
+                discoveries: { value: 3 },
+                event_actions: {
+                  buckets: [
+                    { key: 'generation-started', doc_count: 1 },
+                    { key: 'generation-succeeded', doc_count: 1 },
+                  ],
+                },
+                event_reason: { buckets: [] },
+                loading_message: { buckets: [{ key: 'Loading...', doc_count: 2 }] },
+                generation_end_time: { value_as_string: '2025-08-01T00:00:00Z' },
+                generation_start_time: { value_as_string: '2025-07-31T00:00:00Z' },
+                workflow_reference: {
+                  buckets: [
+                    { key: bucket1, doc_count: 1 },
+                    { key: bucket2, doc_count: 1 },
+                  ],
+                },
+              },
+            ],
+          },
+        },
+      };
+
+      const result = transformGetAttackDiscoveryGenerationsSearchResult({ logger, rawResponse });
+
+      expect(result.generations[0].source_metadata).toEqual({
+        action_execution_uuid: 'action-uuid-final',
+        rule_id: 'rule-final',
+        rule_name: 'Final Rule',
+      });
+    });
+
+    it('gracefully handles malformed JSON in workflow_reference bucket', () => {
+      const rawResponse = {
+        aggregations: {
+          generations: {
+            buckets: [
+              {
+                key: 'exec-uuid-bad-json-meta',
+                doc_count: 1,
+                alerts_context_count: { value: 5 },
+                connector_id: { buckets: [{ key: 'test-connector', doc_count: 1 }] },
+                discoveries: { value: 0 },
+                event_actions: {
+                  buckets: [
+                    { key: 'generation-started', doc_count: 1 },
+                    { key: 'generation-succeeded', doc_count: 1 },
+                  ],
+                },
+                event_reason: { buckets: [] },
+                loading_message: { buckets: [{ key: 'Loading...', doc_count: 1 }] },
+                generation_end_time: { value_as_string: '2025-08-01T00:00:00Z' },
+                generation_start_time: { value_as_string: '2025-07-31T00:00:00Z' },
+                workflow_reference: {
+                  buckets: [{ key: 'not-valid-json{{{', doc_count: 1 }],
+                },
+              },
+            ],
+          },
+        },
+      };
+
+      const result = transformGetAttackDiscoveryGenerationsSearchResult({ logger, rawResponse });
+
+      expect(result.generations[0].source_metadata).toBeUndefined();
     });
   });
 

@@ -43,18 +43,18 @@ export const transformScheduleToApi = (
       schedule.params.workflowConfig != null
         ? (() => {
             const wc = schedule.params.workflowConfig as {
+              alertRetrievalMode?: 'custom_only' | 'custom_query' | 'esql';
               alertRetrievalWorkflowIds?: string[];
               defaultAlertRetrievalEnabled?: boolean;
-              defaultAlertRetrievalMode?: 'custom_query' | 'disabled' | 'esql';
               esqlQuery?: string;
               validationWorkflowId?: string;
             };
-            const defaultAlertRetrievalMode =
-              wc.defaultAlertRetrievalMode ??
-              (wc.defaultAlertRetrievalEnabled === false ? 'disabled' : 'custom_query');
+            const alertRetrievalMode =
+              wc.alertRetrievalMode ??
+              (wc.defaultAlertRetrievalEnabled === false ? 'custom_only' : 'custom_query');
             return {
+              alert_retrieval_mode: alertRetrievalMode,
               alert_retrieval_workflow_ids: wc.alertRetrievalWorkflowIds ?? [],
-              default_alert_retrieval_mode: defaultAlertRetrievalMode,
               esql_query: wc.esqlQuery,
               validation_workflow_id: wc.validationWorkflowId ?? 'default',
             };

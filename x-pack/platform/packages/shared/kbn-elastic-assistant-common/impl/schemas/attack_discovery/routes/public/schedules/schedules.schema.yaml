@@ -106,13 +106,12 @@ components:
               items:
                 type: string
               default: []
-            defaultAlertRetrievalMode:
+            alertRetrievalMode:
               type: string
               enum:
-                - disabled
+                - custom_only
                 - esql
                 - custom_query
-                - provided
               default: custom_query
             esqlQuery:
               type: string

@@ -7,6 +7,12 @@
 
 import type { AnalyticsServiceSetup, Logger } from '@kbn/core/server';
 
+interface ScheduleInfo {
+  actions: string[];
+  id: string;
+  interval: string;
+}
+
 interface WorkflowSuccessTelemetryParams {
   actionTypeId: string;
   alertsContextCount: number;
@@ -14,7 +20,7 @@ interface WorkflowSuccessTelemetryParams {
   configuredAlertsCount: number;
   custom_retrieval_workflow_count: number;
   dateRangeDuration: number;
-  default_alert_retrieval_mode: string;
+  alert_retrieval_mode: string;
   discoveriesGenerated: number;
   duplicatesDroppedCount?: number;
   durationMs: number;
@@ -26,6 +32,7 @@ interface WorkflowSuccessTelemetryParams {
   prebuilt_step_types_used: string[];
   provider?: string;
   retrieval_workflow_count: number;
+  scheduleInfo?: ScheduleInfo;
   trigger: string;
   uses_default_retrieval: boolean;
   uses_default_validation: boolean;
@@ -40,6 +47,7 @@ interface WorkflowErrorTelemetryParams {
   misconfiguration_detected?: boolean;
   model?: string;
   provider?: string;
+  scheduleInfo?: ScheduleInfo;
   trigger: string;
 }
 

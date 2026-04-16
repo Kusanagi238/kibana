@@ -39,10 +39,10 @@ export declare const PostGenerateRequestBody: z.ZodObject<
       z.ZodObject<
         {
           alert_retrieval_workflow_ids: z.ZodDefault<z.ZodOptional<z.ZodArray<z.ZodString>>>;
-          default_alert_retrieval_mode: z.ZodDefault<
+          alert_retrieval_mode: z.ZodDefault<
             z.ZodOptional<
               z.ZodEnum<{
-                disabled: 'disabled';
+                custom_only: 'custom_only';
                 esql: 'esql';
                 custom_query: 'custom_query';
               }>
