@@ -156,6 +156,10 @@ export const AttackDiscoveryGeneration = lazySchema(() =>
      */
     workflow_executions: WorkflowExecutionsTracking.optional(),
     /**
+     * The workflow definition ID for deep linking
+     */
+    workflow_id: z.string().optional(),
+    /**
      * The workflow execution ID for monitoring
      */
     workflow_run_id: z.string().optional(),
