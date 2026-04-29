@@ -1,6 +1,10 @@
 # Discoveries Plugin
 
-Integrates Attack Discovery with the Kibana Workflows engine.
+Through an integration with Kibana Workflows, Attack discovery 2.0 proffers users the ability to:
+
+- Optimize the alerts context provided to Attack discovery via user-defined workflows and agents
+- Post-process generations via workflows and agents to enrich, validate, and reject generations before they are promoted to attacks.
+
 
 ## Feature Flag
 
@@ -12,17 +16,54 @@ feature_flags.overrides:
 ```
 
 
+## Decoupling alert retrieval, generation, and promotion
+
+The current implementation of Attack discovery generation is implemented as a singluar `/api/attack_discovery/_generate` public API [route](https://www.elastic.co/docs/api/doc/kibana/operation/operation-postattackdiscoverygenerate) that encapsulates both the retrieval of anonymized alerts before generation, and writing Attack discoveries to an alerts index after generation.
+
+Additional APIs enable scheduling Attack discovery generations, which are also written to an attack discoveries index by the alerting framework, and provided as context to actions that are run within the alerting framework.
+
+The Attack discovery 2.0 architecture decouples alert retrieval, generation, and promotion into workflow steps, with out-of-the-box defaults, that users can augment or replace with custom workflows.
+
+
 ## Overview
 
 This plugin implements Attack Discovery 2.0 by decoupling alert retrieval, generation, and validation into customizable workflow steps. It provides:
 
 - **Internal APIs** for generating and validating security insights
 - **Workflow Steps** for alert retrieval, generation, and validation
-- **Feature Flag** to enable/disable the functionality (`attackDiscoveryWorkflowsEnabled`)
 
-> **Hybrid Architecture**: Scheduling is always alerting-backed regardless of the feature flag state. The Alerting Framework owns scheduling, alert persistence, and action execution (with full throttling/frequency support). The Workflows engine owns only the generation pipeline (alert retrieval → generation → validation). This unified model ensures action frequency settings are always enforced.
+### Three Ways to Run Attack Discovery
 
-## Architecture
+Users may run Attack discovery via:
+
+1. Schedules (Alerting Framework Scheduler)
+2. User-authored workflows (attack-disocvery-run step)
+3. Kibana (Ad hoc)
+
+```mermaid
+flowchart TB
+  UI["Attack Discovery UI<br/>Run button"]
+  AF["Alerting Framework<br/>Scheduler (workflowExecutor)"]
+  USER["User-authored workflow<br/>(attack-discovery.run step)"]
+  GEN["POST /internal/attack_discovery/_generate"]
+  ORCH["executeOrchestratorWorkflow<br/>(verify integrity → validate → 3 phases)"]
+  R["Phase 1: defaultAlertRetrieval<br/>(DSL or ES|QL)"]
+  G["Phase 2: generate<br/>(LangGraph + event log)"]
+  V["Phase 3: defaultValidation<br/>+ persistDiscoveries"]
+  EBT["EBT telemetry"]
+  EVL["Event log<br/>(.kibana-event-log-*)"]
+  UI --> GEN
+  AF --> ORCH
+  USER --> ORCH
+  GEN --> ORCH
+  ORCH --> R --> G --> V
+  ORCH --> EBT
+  G --> EVL
+  ORCH --> EVL
+```
+
+
+## Packages and Plugins
 
 ```
 ┌────────────────────────────────────────────────────────────────────┐
@@ -111,6 +152,18 @@ flowchart TB
     VALIDATE -->|"misconfiguration detected\n(missing index, bad connector)"| EBT
     Pipeline -->|step failure| EBT
 ```
+
+
+### Schedulding Architecture
+
+The native scheduling features of Workflows will eventually replace the Attack discovery [create schedule](https://www.elastic.co/docs/api/doc/kibana/operation/operation-createattackdiscoveryschedules) public API. (The alerting actions will be executed by a workflow.)
+
+- Scheduling is always alerting-backed regardless of the feature flag state.
+
+- The Alerting Framework owns scheduling, alert persistence, and action execution (with full throttling/frequency support).
+
+- The Workflows engine owns only the generation pipeline (alert retrieval → generation → validation). This unified model ensures action frequency settings are always enforced.
+
 
 ## Modes of Execution
 
