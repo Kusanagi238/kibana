@@ -19,6 +19,8 @@ import { useScheduleApi } from '../logic/use_schedule_api';
 import { mockAttackDiscoverySchedule } from '../../../mock/mock_attack_discovery_schedule';
 import { ATTACK_DISCOVERY_FEATURE_ID } from '../../../../../../common/constants';
 import { waitForEuiToolTipVisible } from '@elastic/eui/lib/test/rtl';
+import { useEditForm } from '../edit_form/use_edit_form';
+import type { AttackDiscoveryScheduleSchema } from '../edit_form/types';
 
 jest.mock('@kbn/inference-connectors');
 jest.mock('../logic/use_schedule_api');
@@ -26,7 +28,9 @@ jest.mock('../../../../../common/lib/kibana');
 jest.mock('../../../../../sourcerer/containers');
 jest.mock('../utils/convert_form_data', () => ({
   convertFormDataInBaseSchedule: jest.fn().mockReturnValue({}),
+  convertFormDataToWorkflowSchedule: jest.fn().mockReturnValue({}),
 }));
+jest.mock('../edit_form/use_edit_form');
 jest.mock('react-router-dom', () => ({
   matchPath: jest.fn(),
   useLocation: jest.fn().mockReturnValue({
@@ -34,6 +38,11 @@ jest.mock('react-router-dom', () => ({
   }),
   withRouter: jest.fn(),
 }));
+
+import {
+  convertFormDataInBaseSchedule,
+  convertFormDataToWorkflowSchedule,
+} from '../utils/convert_form_data';
 
 const mockConnectors: unknown[] = [
   {
@@ -46,14 +55,37 @@ const mockConnectors: unknown[] = [
   },
 ];
 
+const mockConnectorMatchingSchedule = {
+  id: mockAttackDiscoverySchedule.params.apiConfig.connectorId,
+  name: mockAttackDiscoverySchedule.params.apiConfig.name,
+  actionTypeId: mockAttackDiscoverySchedule.params.apiConfig.actionTypeId,
+};
+
 const mockUseKibana = useKibana as jest.MockedFunction<typeof useKibana>;
 const mockUseSourcererDataView = useSourcererDataView as jest.MockedFunction<
   typeof useSourcererDataView
 >;
 const mockUseScheduleApi = useScheduleApi as jest.MockedFunction<typeof useScheduleApi>;
+const mockUseEditForm = useEditForm as jest.MockedFunction<typeof useEditForm>;
 const updateScheduleMock = jest.fn();
 const mockUseGetSchedule = jest.fn();
 const mockUseUpdateSchedule = jest.fn();
+
+let capturedInitialValue: AttackDiscoveryScheduleSchema | undefined;
+
+const mockFormData: AttackDiscoveryScheduleSchema = {
+  actions: [],
+  alertsSelectionSettings: {
+    end: 'now',
+    filters: [],
+    query: { language: 'kuery', query: '' },
+    size: 100,
+    start: 'now-24h',
+  },
+  connectorId: mockAttackDiscoverySchedule.params.apiConfig.connectorId,
+  interval: '24h',
+  name: 'test schedule',
+};
 
 const defaultProps = {
   scheduleId: mockAttackDiscoverySchedule.id,
@@ -104,6 +136,7 @@ const setupUseKibana = (updateAttackDiscoverySchedule = true) => {
 describe('DetailsFlyout', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    capturedInitialValue = undefined;
 
     setupUseKibana();
 
@@ -134,6 +167,22 @@ describe('DetailsFlyout', () => {
       useGetSchedule: mockUseGetSchedule,
       useUpdateSchedule: mockUseUpdateSchedule,
     } as unknown as ReturnType<typeof useScheduleApi>);
+
+    mockUseEditForm.mockImplementation(({ initialValue, onFormMutated, onSave }) => {
+      capturedInitialValue = initialValue;
+      return {
+        editForm: (
+          <div data-test-subj="attackDiscoveryScheduleForm">
+            <input data-test-subj="alertsRange" onChange={() => onFormMutated?.()} />
+          </div>
+        ),
+        actionButtons: (
+          <button data-test-subj="save" onClick={() => onSave?.(mockFormData)} type="button">
+            {'Save'}
+          </button>
+        ),
+      };
+    });
   });
 
   it('should render the flyout title', async () => {
@@ -250,13 +299,7 @@ describe('DetailsFlyout', () => {
       // Override connectors to include the connector that matches the mock schedule's connectorId
       (useLoadConnectors as jest.Mock).mockReturnValue({
         isLoading: false,
-        data: [
-          {
-            id: mockAttackDiscoverySchedule.params.apiConfig.connectorId,
-            name: mockAttackDiscoverySchedule.params.apiConfig.name,
-            actionTypeId: mockAttackDiscoverySchedule.params.apiConfig.actionTypeId,
-          },
-        ],
+        data: [mockConnectorMatchingSchedule],
       });
     });
 
@@ -331,6 +374,115 @@ describe('DetailsFlyout', () => {
 
       const tooltip = screen.getByRole('tooltip');
       expect(tooltip).toHaveTextContent('Missing privileges');
+    });
+  });
+
+  describe('Bug 1: workflowConfig must be included in the form initialValue', () => {
+    const mockWorkflowConfig = {
+      alertRetrievalMode: 'custom_query' as const,
+      alertRetrievalWorkflowIds: ['alert-retrieval-workflow-abc'],
+      validationWorkflowId: 'default',
+    };
+
+    const mockScheduleWithWorkflowConfig = {
+      ...mockAttackDiscoverySchedule,
+      params: {
+        ...mockAttackDiscoverySchedule.params,
+        workflowConfig: mockWorkflowConfig,
+      },
+    };
+
+    beforeEach(() => {
+      mockUseGetSchedule.mockReturnValue({
+        isLoading: false,
+        data: { schedule: mockScheduleWithWorkflowConfig },
+      });
+    });
+
+    it('initializes the edit form with workflowConfig from the saved schedule', async () => {
+      await renderComponent();
+
+      // Enter edit mode so useEditForm is called with the initialValue
+      act(() => {
+        fireEvent.click(screen.getByTestId('edit'));
+      });
+
+      await waitFor(() => {
+        expect(screen.getByTestId('attackDiscoveryScheduleForm')).toBeInTheDocument();
+      });
+
+      expect(capturedInitialValue?.workflowConfig).toEqual(mockWorkflowConfig);
+    });
+
+    it('initializes with the correct alertRetrievalWorkflowIds', async () => {
+      await renderComponent();
+
+      act(() => {
+        fireEvent.click(screen.getByTestId('edit'));
+      });
+
+      await waitFor(() => {
+        expect(screen.getByTestId('attackDiscoveryScheduleForm')).toBeInTheDocument();
+      });
+
+      expect(capturedInitialValue?.workflowConfig?.alertRetrievalWorkflowIds).toEqual([
+        'alert-retrieval-workflow-abc',
+      ]);
+    });
+  });
+
+  describe('Bug 2: convertFormDataToWorkflowSchedule must be used when isWorkflowsEnabled=true', () => {
+    beforeEach(() => {
+      mockUseScheduleApi.mockReturnValue({
+        isWorkflowsEnabled: true,
+        useCreateSchedule: jest.fn(),
+        useDeleteSchedule: jest.fn(),
+        useDisableSchedule: jest.fn(),
+        useEnableSchedule: jest.fn(),
+        useFindSchedules: jest.fn(),
+        useGetSchedule: mockUseGetSchedule,
+        useUpdateSchedule: mockUseUpdateSchedule,
+      } as unknown as ReturnType<typeof useScheduleApi>);
+
+      (useLoadConnectors as jest.Mock).mockReturnValue({
+        isLoading: false,
+        data: [mockConnectorMatchingSchedule],
+      });
+    });
+
+    it('calls convertFormDataToWorkflowSchedule (not convertFormDataInBaseSchedule) when saving', async () => {
+      await renderComponent();
+
+      await act(async () => {
+        fireEvent.click(screen.getByTestId('edit'));
+      });
+
+      await waitFor(() => {
+        expect(screen.getByTestId('attackDiscoveryScheduleForm')).toBeInTheDocument();
+      });
+
+      await act(async () => {
+        fireEvent.click(screen.getByTestId('save'));
+      });
+
+      expect(convertFormDataToWorkflowSchedule).toHaveBeenCalled();
+      expect(convertFormDataInBaseSchedule).not.toHaveBeenCalled();
+    });
+
+    it('passes isWorkflowsEnabled=true to useEditForm', async () => {
+      await renderComponent();
+
+      act(() => {
+        fireEvent.click(screen.getByTestId('edit'));
+      });
+
+      await waitFor(() => {
+        expect(screen.getByTestId('attackDiscoveryScheduleForm')).toBeInTheDocument();
+      });
+
+      expect(mockUseEditForm).toHaveBeenCalledWith(
+        expect.objectContaining({ isWorkflowsEnabled: true })
+      );
     });
   });
 });
