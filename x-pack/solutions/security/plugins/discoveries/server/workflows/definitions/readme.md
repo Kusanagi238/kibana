@@ -94,43 +94,7 @@ flowchart TB
 
 ---
 
-### 2. ES|QL Example (`attack-discovery-esql-example`)
-
-**File**: `attack_discovery_esql_example.workflow.yaml`
-
-**Purpose**: Demonstrates custom alert retrieval using ES|QL queries via the `elasticsearch.esql.query` step type. This workflow serves as a reference implementation for teams who want to customize how alerts are retrieved.
-
-The ES|QL query replicates the behavior of the DSL query in `kbn-elastic-assistant-common/impl/alerts/get_open_and_acknowledged_alerts_query`:
-- Retrieves alerts with `workflow_status` IN ('open', 'acknowledged')
-- Excludes building block alerts (`building_block_type` IS NULL)
-- Sorts by `risk_score` (descending), then `@timestamp` (descending)
-- Applies configurable time range filter using Elasticsearch DSL date math
-
-**When to Use**:
-- Reference implementation for building custom retrieval workflows
-- When you need custom ES|QL-based alert queries
-- For advanced filtering and transformation scenarios
-
-#### Inputs
-
-| Name | Type | Required | Default | Description |
-|------|------|----------|---------|-------------|
-| `alerts_index_pattern` | string | ✅ | - | Alert index pattern (e.g., `.alerts-security.alerts-default`) |
-| `size` | number | ❌ | `100` | Maximum alerts to retrieve (1-10000) |
-| `start` | string | ❌ | `now-24h` | Time range start (date math) |
-| `end` | string | ❌ | `now` | Time range end (date math) |
-
-#### Outputs
-
-The `elasticsearch.esql.query` step returns ES|QL query results in the standard format:
-- `columns`: Array of column metadata (name, type)
-- `values`: Array of row arrays containing the query results
-
-**Note**: Unlike the legacy retrieval workflow, this ES|QL example returns raw query results without anonymization. Users should add post-processing steps if anonymization is required.
-
----
-
-### 3. Generation (`attack-discovery-generation`)
+### 2. Generation (`attack-discovery-generation`)
 
 **File**: `attack_discovery_generation.workflow.yaml`
 
@@ -159,7 +123,7 @@ The `elasticsearch.esql.query` step returns ES|QL query results in the standard 
 
 ---
 
-### 4. Default Validation (`attack-discovery-validate`)
+### 3. Default Validation (`attack-discovery-validate`)
 
 **File**: `attack_discovery_validate.workflow.yaml`
 
@@ -296,9 +260,8 @@ The following well-known workflow IDs are defined in `@kbn/discoveries/impl/atta
 | Constant | Workflow ID | Description |
 |----------|-------------|-------------|
 | `ATTACK_DISCOVERY_DEFAULT_VALIDATION_WORKFLOW_ID` | `attack-discovery-validate` | Default validation workflow |
-| `ATTACK_DISCOVERY_ESQL_EXAMPLE_WORKFLOW_ID` | `attack-discovery-esql-example` | ES|QL example workflow |
 | `ATTACK_DISCOVERY_DEFAULT_ALERT_RETRIEVAL_WORKFLOW_ID` | `default-attack-discovery-alert-retrieval` | Default alert retrieval |
-| `ATTACK_DISCOVERY_CUSTOM_VALIDATION_EXAMPLE_WORKFLOW_ID` | `attack-discovery-custom-validation-example` | Custom validation example (validate → sort → persist) |
+| `ATTACK_DISCOVERY_CUSTOM_VALIDATION_EXAMPLE_WORKFLOW_ID` | `attack-discovery-custom-validation-example` | Custom validation example (validate → data.map transform → persist) |
 | `ATTACK_DISCOVERY_GENERATION_WORKFLOW_ID` | `attack-discovery-generation` | Generation workflow |
 | `ATTACK_DISCOVERY_RUN_EXAMPLE_WORKFLOW_ID` | `attack-discovery-run-example` | Run example (full pipeline via `attack-discovery.run` step) |
 
@@ -329,15 +292,37 @@ steps:
 
 The `| json` filter serializes the value to a JSON string. This is the inverse of the `| parse_json` filter (where available). Use it when a downstream step expects a string representation of structured data.
 
+### The `data.map` Step (Per-Field Transformation)
+
+The custom validation example workflow demonstrates using a `data.map` step to iterate over validated discoveries and apply Liquid filters to individual fields. This is more powerful than a single Liquid filter on the entire array because each field can be transformed independently.
+
+```yaml
+- name: transform_discoveries
+  type: data.map
+  items: ${{ steps.validate_discoveries.output.validated_discoveries }}
+  with:
+    fields:
+      alert_ids: ${{ item.alert_ids }}
+      details_markdown: ${{ item.details_markdown | upcase }}
+      entity_summary_markdown: ${{ item.entity_summary_markdown | upcase }}
+      id: ${{ item.id }}
+      mitre_attack_tactics: ${{ item.mitre_attack_tactics }}
+      summary_markdown: ${{ item.summary_markdown | upcase }}
+      timestamp: ${{ item.timestamp }}
+      title: ${{ item.title | upcase }}
+```
+
+The `items` expression binds the array to iterate, and `item` is the loop variable for each element. Replace `| upcase` with any Liquid transformation (truncation, custom labelling, etc.). The step output (`steps.transform_discoveries.output`) is passed directly to `persistDiscoveries` as `attack_discoveries`. See `attack_discovery_custom_validation_example.workflow.yaml` for the complete example.
+
 ### The `| sort` Filter (Reordering Step Outputs)
 
-The sorted validation example workflow demonstrates using `| sort: "title"` to reorder discoveries alphabetically between the validation and persist steps:
+The `| sort` Liquid filter reorders an array by a named field:
 
 ```yaml
 attack_discoveries: '${{ steps.validate_discoveries.output.validated_discoveries | sort: "title" }}'
 ```
 
-This pattern allows trivial data transformations between steps without requiring a custom step type. See `attack_discovery_custom_validation_example.workflow.yaml` for the complete example.
+This is a lightweight alternative to `data.map` when you only need to reorder (not reshape) the array.
 
 ### The `| size` Filter (Counting Elements)
 

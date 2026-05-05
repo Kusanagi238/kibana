@@ -1,10 +1,52 @@
-# Attack Discovery Workflow Steps — Justification
+# Attack Discovery Workflow Steps
 
-This document explains why each Attack Discovery step is registered as a workflow step rather than exposed as a REST endpoint. It targets the workflows-eng team reviewing the step registration PR.
+This document is the contract reference for the five Attack Discovery workflow steps: schema source, anonymization-boundary flow, per-step justification (why a step instead of a REST endpoint), failure modes, and the checklist for adding a new step.
+
+For the system-level architecture (three execution paths, the orchestrator, security surfaces, etc.), see the canonical [discoveries plugin README](../../../README.md).
+
+## Schema source: `@kbn/zod/v4` (NOT v3)
+
+> **Workflow step schemas MUST use `@kbn/zod/v4`.** Auto-generated REST schemas use `@kbn/zod` v3, which has incompatible internal structures (v4 enums carry `.values`; v3 enums do not). Casting v3 schemas to v4 only changes TypeScript types, not runtime behavior — and surfaces at runtime as `TypeError: Cannot read properties of undefined (reading 'values')` in the Workflows UI.
+
+This is a platform-level requirement of the Workflows engine; the rule applies to every workflow step in Kibana, not just Attack Discovery.
+
+### Correct pattern
+
+```typescript
+import { z } from '@kbn/zod/v4';
+import type { CommonStepDefinition } from '@kbn/workflows-extensions/common';
+
+export const MyStepInputSchema = z.object({
+  type: z.enum(['option_a', 'option_b']),
+  config: z.object({ field: z.string() }),
+});
+
+export const MyStepOutputSchema = z.object({ result: z.string() });
+
+export const MyStepCommonDefinition: CommonStepDefinition<
+  typeof MyStepInputSchema,
+  typeof MyStepOutputSchema
+> = {
+  id: 'my.step',
+  inputSchema: MyStepInputSchema,
+  outputSchema: MyStepOutputSchema,
+};
+```
+
+### Anti-pattern (causes runtime errors)
+
+```typescript
+// ⛔ DO NOT DO THIS — v3 schemas cast to v4 break at runtime
+import type { z as zV4 } from '@kbn/zod/v4';
+import { GeneratedSchema } from '@kbn/discoveries-schemas'; // v3
+
+const toV4Schema = <T>(schema: unknown): zV4.ZodType<T> =>
+  schema as zV4.ZodType<T>; // ⛔ unsafe cast; runtime fails
+```
 
 ## Overview
 
-Attack Discovery registers **five** workflow step types. All five are implemented. Each step is a server-side `createServerStepDefinition` backed by a shared common definition in `common/step_types/`.
+Attack Discovery registers **five** workflow step types. Each step is a server-side `createServerStepDefinition` backed by a shared common definition in `common/step_types/`.
 
 | Step Type ID | Category | Status |
 |---|---|---|
@@ -13,6 +55,41 @@ Attack Discovery registers **five** workflow step types. All five are implemente
 | `attack-discovery.defaultValidation` | Kibana | Implemented |
 | `attack-discovery.persistDiscoveries` | Kibana | Implemented |
 | `attack-discovery.run` | AI | Implemented |
+
+## Anonymization-boundary contract per step
+
+The anonymization boundary sits at `defaultAlertRetrieval`. Everything downstream operates on anonymized strings; the `replacements` map is the only bridge back to real values and is **excluded by the output schema** of `attack-discovery.run` so user-authored workflows cannot inadvertently log or forward the de-anonymization key.
+
+| Step | Input | Output | `replacements` flow |
+|---|---|---|---|
+| `defaultAlertRetrieval` | DSL filter / ES\|QL query | `string[]` (anonymized) + `replacements` | **produced** |
+| `generate` | `string[]` (anonymized strings only) | `attack_discoveries` | passes through |
+| `defaultValidation` | `attack_discoveries` | validation result | not in output (consumed internally for hallucination check) |
+| `persistDiscoveries` | validated discoveries + `replacements` | persisted IDs | consumed (de-anonymize on display) |
+| `run` | retrieval + gen + validate config | discoveries (no `replacements`) | **excluded by output schema** |
+
+The `generate` step's input contract is `alerts: z.array(z.string()).min(1)` — anonymized strings only. A `string[]` schema cannot carry nested fields that might leak sensitive data, and Liquid filters cannot inadvertently expose nested fields between steps.
+
+## Step-definition wiring
+
+```mermaid
+graph LR
+  CST["common/step_types/<br/>shared_schemas.ts"] --> AR["common/step_types/<br/>default_alert_retrieval.ts"]
+  CST --> GEN["common/step_types/<br/>generate.ts"]
+  CST --> VAL["common/step_types/<br/>default_validation.ts"]
+  CST --> PER["common/step_types/<br/>persist_discoveries.ts"]
+  CST --> RUN["common/step_types/<br/>run.ts"]
+  AR --> ARS["server/workflows/steps/<br/>default_alert_retrieval/"]
+  GEN --> GENS["server/workflows/steps/<br/>generate/"]
+  VAL --> VALS["server/workflows/steps/<br/>default_validation/"]
+  PER --> PERS["server/workflows/steps/<br/>persist_discoveries/"]
+  RUN --> RUNS["server/workflows/steps/<br/>run/"]
+  ARS -.->|registered in| PLUGIN["plugin.setup()"]
+  GENS -.->|registered in| PLUGIN
+  VALS -.->|registered in| PLUGIN
+  PERS -.->|registered in| PLUGIN
+  RUNS -.->|registered in| PLUGIN
+```
 
 ## Why Steps Instead of REST Endpoints
 
@@ -260,7 +337,36 @@ The common definition is a `CommonStepDefinition<TInput, TOutput>` that includes
 - `category`: `StepCategory.Elasticsearch | StepCategory.Ai | StepCategory.Kibana`
 - `label`: Human-readable name for the step catalog UI
 - `description`: One-sentence description
-- `inputSchema`: Zod schema defining the step's input contract
-- `outputSchema`: Zod schema defining the step's output contract
+- `inputSchema`: Zod schema defining the step's input contract (`@kbn/zod/v4`)
+- `outputSchema`: Zod schema defining the step's output contract (`@kbn/zod/v4`)
 
 This separation ensures that schema changes are reflected in both the step catalog and the server-side handler, and that input/output validation is enforced by the workflow engine before the handler executes.
+
+## Failure modes
+
+| Symptom | Likely cause | Where to look |
+|---------|--------------|---------------|
+| Step missing from the Workflows step catalog | Plugin scaffold did not register it (or FF is OFF) | `plugin.setup()` step registration; verify `securitySolution.attackDiscoveryWorkflowsEnabled: true` |
+| `TypeError: Cannot read properties of undefined (reading 'values')` in Workflows UI | v3-zod schema cast to v4 | Check the step's `common/step_types/` file imports `from '@kbn/zod/v4'` directly, not via a v3 cast |
+| Step times out | Step's `timeout` value (in YAML) too short relative to LLM/connector latency | Workflow YAML; LLM connector configuration; the layered timeout architecture in the canonical README |
+| Step cancellation does not stop in-flight LLM calls | Handler ignores the `AbortSignal` from the workflow context | `context.abortSignal` must be threaded into the `actionsClient`/`getFakeRequest()` call |
+| Anonymized alerts appear with raw PII | Step receives raw alert objects (not `string[]`) | Verify the upstream step's output schema is `string[]`; never accept structured alert objects in `generate` |
+| Validation returns 0 valid discoveries | Hallucination detection rejected all of them (alert IDs in discoveries don't match retrieved alerts) | Check `defaultAlertRetrieval` output's anonymization config includes `_id` |
+| Schema mismatch at the step boundary | Handler returns a shape the `outputSchema` rejects | Workflow engine surfaces a validation error before the next step starts; fix the handler or schema |
+
+## Adding a new step
+
+1. **Create the common definition** in [`common/step_types/<step_name>.ts`](../../../common/step_types/):
+   - `import { z } from '@kbn/zod/v4'` — never v3
+   - Export `MyStepInputSchema`, `MyStepOutputSchema`, `MyStepCommonDefinition: CommonStepDefinition<...>`
+   - `id` follows the `attack-discovery.<verb>` convention
+2. **Create the server handler** in [`server/workflows/steps/<step_name>/`](.):
+   - `helpers/<helper_name>/index.ts` + `helpers/<helper_name>/index.test.ts` for any non-trivial helper (per `identity.md` layout rule)
+   - Wrap with `createServerStepDefinition(MyStepCommonDefinition, handler)`
+   - Use `context.contextManager.getFakeRequest()` to inherit the workflow execution's auth scope; never use `asInternalUser`
+   - Thread `context.abortSignal` into any long-running call (LLM, connector, ES query)
+3. **Register the step** in [`plugin.setup()`](../../plugin.ts) via `tryRegisterStep` (which records `StepRegistrationResult` for the startup health check).
+4. **Write Jest unit tests** alongside the handler. Run with `node scripts/jest --coverage <path-to-step>`.
+5. **If the step joins a default workflow YAML**, update the bundled YAML and the integrity manifest (PR 9 self-healing verifies the YAML byte-stably; whitespace-only diffs trigger drift detection).
+6. **Add a row to the canonical [discoveries plugin README](../../../README.md) Workflow Steps reference table.**
+7. **Update this README's anonymization-boundary table** if the step receives or produces `replacements`.

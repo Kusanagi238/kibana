@@ -133,7 +133,6 @@ Steps use `@kbn/zod/v4` inline schemas (not generated v3 schemas) per the Workfl
 | `default_attack_discovery_alert_retrieval` | Default alert retrieval (query DSL) — _required_ |
 | `attack_discovery_generation` | Generation via LangGraph — _required_ |
 | `attack_discovery_validate` | Validation + persistence — _required_ |
-| `attack_discovery_esql_example` | Example: ES\|QL-based alert retrieval |
 | `attack_discovery_custom_validation_example` | Example: custom validation with Liquid sort filter |
 | `attack_discovery_run_example` | Example: full pipeline in one step |
 
@@ -160,7 +159,7 @@ Steps use `@kbn/zod/v4` inline schemas (not generated v3 schemas) per the Workfl
   - `default_validation_step/`
   - `persist_discoveries_step/`
   - `run_step/`
-- `server/workflows/definitions/` — 6 bundled YAML workflow definitions (3 required + 3 examples)
+- `server/workflows/definitions/` — 5 bundled YAML workflow definitions (3 required + 2 examples)
 - `server/workflows/register_default_workflows.ts` — default workflow registration per space
 - `server/workflows/helpers/` — `get_bundled_yaml_entries/`, `read_bundled_workflow_yaml/`, `resolve_connector_details/`
 - Platform registrations:
@@ -226,8 +225,6 @@ Internal schedules use a bidirectional tag strategy: `applyTags` tags every writ
 
 The `default_esql_query` route returns a pre-built ES|QL query that replicates the behavior of the default DSL query (open/acknowledged alerts, sorted by risk score, excluding building blocks). The ES|QL mode is available as a `default_alert_retrieval_mode` option alongside `custom_query` and `disabled`.
 
-The `attack_discovery_esql_example.workflow.yaml` bundled definition demonstrates custom alert retrieval using `elasticsearch.esql.query`, serving as a reference for teams building custom retrieval workflows.
-
 </details>
 
 **Scope**:
@@ -246,7 +243,6 @@ The `attack_discovery_esql_example.workflow.yaml` bundled definition demonstrate
 - `GET /internal/attack_discovery/default_esql_query` (`server/routes/get/default_esql_query/`)
 - `@kbn/discoveries` `impl/lib/build_default_esql_query/` — default ES|QL query generation
 - `common/step_types/` — `esql` mode in `default_alert_retrieval_mode` enum
-- Bundled YAML: `attack_discovery_esql_example.workflow.yaml`
 - UI: `use_fetch_default_esql_query/` hook
 - `server/lib/schedules/` — schedule data client, workflow executor, constants
 - `server/lib/helpers/get_space_id/`

@@ -81,11 +81,17 @@
       "@kbn/agent-builder-server/*": [
         "x-pack/platform/packages/shared/agent-builder/agent-builder-server/*"
       ],
-      "@kbn/ai-agent-confirmation-modal": [
-        "x-pack/platform/packages/shared/ai-assistant/ai-agent-confirmation-modal"
+      "@kbn/agent-builder-tools-base": [
+        "x-pack/platform/packages/shared/agent-builder/agent-builder-tools-base"
       ],
-      "@kbn/ai-agent-confirmation-modal/*": [
-        "x-pack/platform/packages/shared/ai-assistant/ai-agent-confirmation-modal/*"
+      "@kbn/agent-builder-tools-base/*": [
+        "x-pack/platform/packages/shared/agent-builder/agent-builder-tools-base/*"
+      ],
+      "@kbn/agent-context-layer-plugin": [
+        "x-pack/platform/plugins/shared/agent_context_layer"
+      ],
+      "@kbn/agent-context-layer-plugin/*": [
+        "x-pack/platform/plugins/shared/agent_context_layer/*"
       ],
       "@kbn/ai-assistant": [
         "x-pack/platform/packages/shared/kbn-ai-assistant"
@@ -243,6 +249,12 @@
       "@kbn/alerting-types/*": [
         "src/platform/packages/shared/kbn-alerting-types/*"
       ],
+      "@kbn/alerting-v2-constants": [
+        "x-pack/platform/packages/shared/response-ops/alerting-v2-constants"
+      ],
+      "@kbn/alerting-v2-constants/*": [
+        "x-pack/platform/packages/shared/response-ops/alerting-v2-constants/*"
+      ],
       "@kbn/alerting-v2-episodes-ui": [
         "x-pack/platform/packages/shared/response-ops/alerting-v2-episodes-ui"
       ],
@@ -381,6 +393,12 @@
       "@kbn/apm-data-view/*": [
         "src/platform/packages/shared/kbn-apm-data-view/*"
       ],
+      "@kbn/apm-embeddable-common": [
+        "x-pack/solutions/observability/packages/kbn-apm-embeddable-common"
+      ],
+      "@kbn/apm-embeddable-common/*": [
+        "x-pack/solutions/observability/packages/kbn-apm-embeddable-common/*"
+      ],
       "@kbn/apm-ftr-e2e": [
         "x-pack/solutions/observability/plugins/apm/ftr_e2e"
       ],
@@ -471,6 +489,18 @@
       "@kbn/as-code-shared-schemas/*": [
         "src/platform/packages/shared/as-code/shared-schemas/*"
       ],
+      "@kbn/as-code-shared-telemetry": [
+        "src/platform/packages/shared/as-code/shared-telemetry"
+      ],
+      "@kbn/as-code-shared-telemetry/*": [
+        "src/platform/packages/shared/as-code/shared-telemetry/*"
+      ],
+      "@kbn/as-code-shared-transforms": [
+        "src/platform/packages/shared/as-code/shared-transforms"
+      ],
+      "@kbn/as-code-shared-transforms/*": [
+        "src/platform/packages/shared/as-code/shared-transforms/*"
+      ],
       "@kbn/attack-discovery-schedules-common": [
         "x-pack/solutions/security/packages/kbn-attack-discovery-schedules-common"
       ],
@@ -488,12 +518,6 @@
       ],
       "@kbn/automatic-import-plugin/*": [
         "x-pack/platform/plugins/shared/automatic_import/*"
-      ],
-      "@kbn/automatic-import-v2-plugin": [
-        "x-pack/platform/plugins/shared/automatic_import_v2"
-      ],
-      "@kbn/automatic-import-v2-plugin/*": [
-        "x-pack/platform/plugins/shared/automatic_import_v2/*"
       ],
       "@kbn/autoops-promotion-callout": [
         "src/platform/packages/shared/kbn-management/autoops_promotion_callout"
@@ -831,6 +855,12 @@
       "@kbn/config-schema/*": [
         "src/platform/packages/shared/kbn-config-schema/*"
       ],
+      "@kbn/connector-cli": [
+        "src/platform/packages/shared/kbn-connector-cli"
+      ],
+      "@kbn/connector-cli/*": [
+        "src/platform/packages/shared/kbn-connector-cli/*"
+      ],
       "@kbn/connector-schemas": [
         "src/platform/packages/shared/kbn-connector-schemas"
       ],
@@ -855,6 +885,12 @@
       "@kbn/content-connectors-plugin/*": [
         "x-pack/platform/plugins/shared/content_connectors/*"
       ],
+      "@kbn/content-list": [
+        "src/platform/packages/shared/content-management/content_list/kbn-content-list"
+      ],
+      "@kbn/content-list/*": [
+        "src/platform/packages/shared/content-management/content_list/kbn-content-list/*"
+      ],
       "@kbn/content-list-assembly": [
         "src/platform/packages/shared/content-management/content_list/kbn-content-list-assembly"
       ],
@@ -878,6 +914,12 @@
       ],
       "@kbn/content-list-mock-data/*": [
         "src/platform/packages/shared/content-management/content_list/kbn-content-list-mock-data/*"
+      ],
+      "@kbn/content-list-page": [
+        "src/platform/packages/shared/content-management/content_list/kbn-content-list-page"
+      ],
+      "@kbn/content-list-page/*": [
+        "src/platform/packages/shared/content-management/content_list/kbn-content-list-page/*"
       ],
       "@kbn/content-list-provider": [
         "src/platform/packages/shared/content-management/content_list/kbn-content-list-provider"
@@ -1292,12 +1334,6 @@
       ],
       "@kbn/core-chrome-layout-utils/*": [
         "src/core/packages/chrome/layout/core-chrome-layout-utils/*"
-      ],
-      "@kbn/core-chrome-navigation": [
-        "src/core/packages/chrome/navigation"
-      ],
-      "@kbn/core-chrome-navigation/*": [
-        "src/core/packages/chrome/navigation/*"
       ],
       "@kbn/core-chrome-sidebar": [
         "src/core/packages/chrome/sidebar/sidebar"
@@ -2703,6 +2739,24 @@
       "@kbn/dashboard-markdown/*": [
         "src/platform/plugins/shared/dashboard_markdown/*"
       ],
+      "@kbn/dashboard-navigation-options-common": [
+        "src/platform/packages/private/dashboard/dashboard-navigation-options-common"
+      ],
+      "@kbn/dashboard-navigation-options-common/*": [
+        "src/platform/packages/private/dashboard/dashboard-navigation-options-common/*"
+      ],
+      "@kbn/dashboard-navigation-options-components": [
+        "src/platform/packages/private/dashboard/dashboard-navigation-options-components"
+      ],
+      "@kbn/dashboard-navigation-options-components/*": [
+        "src/platform/packages/private/dashboard/dashboard-navigation-options-components/*"
+      ],
+      "@kbn/dashboard-navigation-options-schema": [
+        "src/platform/packages/private/dashboard/dashboard-navigation-options-schema"
+      ],
+      "@kbn/dashboard-navigation-options-schema/*": [
+        "src/platform/packages/private/dashboard/dashboard-navigation-options-schema/*"
+      ],
       "@kbn/dashboard-plugin": [
         "src/platform/plugins/shared/dashboard"
       ],
@@ -2714,12 +2768,6 @@
       ],
       "@kbn/dashboards-selector/*": [
         "src/platform/packages/shared/dashboards/dashboards-selector/*"
-      ],
-      "@kbn/data-catalog-plugin": [
-        "x-pack/platform/plugins/shared/data_catalog"
-      ],
-      "@kbn/data-catalog-plugin/*": [
-        "x-pack/platform/plugins/shared/data_catalog/*"
       ],
       "@kbn/data-forge": [
         "x-pack/platform/packages/shared/kbn-data-forge"
@@ -2768,12 +2816,6 @@
       ],
       "@kbn/data-service-server/*": [
         "src/platform/packages/shared/kbn-data-service-server/*"
-      ],
-      "@kbn/data-sources-plugin": [
-        "x-pack/platform/plugins/shared/data_sources"
-      ],
-      "@kbn/data-sources-plugin/*": [
-        "x-pack/platform/plugins/shared/data_sources/*"
       ],
       "@kbn/data-stream-adapter": [
         "x-pack/solutions/security/packages/data-stream-adapter"
@@ -2876,12 +2918,6 @@
       ],
       "@kbn/deeplinks-analytics/*": [
         "src/platform/packages/shared/deeplinks/analytics/*"
-      ],
-      "@kbn/deeplinks-data-sources": [
-        "src/platform/packages/shared/deeplinks/data_sources"
-      ],
-      "@kbn/deeplinks-data-sources/*": [
-        "src/platform/packages/shared/deeplinks/data_sources/*"
       ],
       "@kbn/deeplinks-devtools": [
         "src/platform/packages/shared/deeplinks/devtools"
@@ -3429,6 +3465,12 @@
       "@kbn/esql-resource-browser-storybook-config/*": [
         "src/platform/packages/shared/kbn-esql-resource-browser/.storybook/*"
       ],
+      "@kbn/esql-server-utils": [
+        "src/platform/packages/shared/kbn-esql-server-utils"
+      ],
+      "@kbn/esql-server-utils/*": [
+        "src/platform/packages/shared/kbn-esql-server-utils/*"
+      ],
       "@kbn/esql-types": [
         "src/platform/packages/shared/kbn-esql-types"
       ],
@@ -3543,6 +3585,12 @@
       "@kbn/evals-suite-security-ai-rules/*": [
         "x-pack/solutions/security/packages/kbn-evals-suite-security-ai-rules/*"
       ],
+      "@kbn/evals-suite-security-automatic-migrations": [
+        "x-pack/solutions/security/packages/kbn-evals-suite-security-automatic-migrations"
+      ],
+      "@kbn/evals-suite-security-automatic-migrations/*": [
+        "x-pack/solutions/security/packages/kbn-evals-suite-security-automatic-migrations/*"
+      ],
       "@kbn/evals-suite-significant-events": [
         "x-pack/platform/packages/shared/kbn-evals-suite-significant-events"
       ],
@@ -3554,6 +3602,12 @@
       ],
       "@kbn/evals-suite-streams/*": [
         "x-pack/platform/packages/shared/kbn-evals-suite-streams/*"
+      ],
+      "@kbn/evals-suite-workflows": [
+        "src/platform/packages/shared/kbn-evals-suite-workflows"
+      ],
+      "@kbn/evals-suite-workflows/*": [
+        "src/platform/packages/shared/kbn-evals-suite-workflows/*"
       ],
       "@kbn/event-annotation-common": [
         "src/platform/packages/shared/kbn-event-annotation-common"
@@ -4035,6 +4089,12 @@
       "@kbn/health-gateway-server/*": [
         "src/platform/packages/private/kbn-health-gateway-server/*"
       ],
+      "@kbn/heap-snapshot-analyzer-cli": [
+        "packages/kbn-heap-snapshot-analyzer-cli"
+      ],
+      "@kbn/heap-snapshot-analyzer-cli/*": [
+        "packages/kbn-heap-snapshot-analyzer-cli/*"
+      ],
       "@kbn/hello-world-plugin": [
         "examples/hello_world"
       ],
@@ -4100,6 +4160,18 @@
       ],
       "@kbn/import-resolver/*": [
         "src/platform/packages/private/kbn-import-resolver/*"
+      ],
+      "@kbn/inbox-common": [
+        "x-pack/platform/packages/shared/kbn-inbox-common"
+      ],
+      "@kbn/inbox-common/*": [
+        "x-pack/platform/packages/shared/kbn-inbox-common/*"
+      ],
+      "@kbn/inbox-plugin": [
+        "x-pack/platform/plugins/shared/inbox"
+      ],
+      "@kbn/inbox-plugin/*": [
+        "x-pack/platform/plugins/shared/inbox/*"
       ],
       "@kbn/index-adapter": [
         "x-pack/solutions/security/packages/index-adapter"
@@ -4220,6 +4292,12 @@
       ],
       "@kbn/infra-plugin/*": [
         "x-pack/solutions/observability/plugins/infra/*"
+      ],
+      "@kbn/ingest-hub-plugin": [
+        "x-pack/platform/plugins/shared/ingest_hub"
+      ],
+      "@kbn/ingest-hub-plugin/*": [
+        "x-pack/platform/plugins/shared/ingest_hub/*"
       ],
       "@kbn/ingest-pipelines-plugin": [
         "x-pack/platform/plugins/shared/ingest_pipelines"
@@ -4767,6 +4845,12 @@
       "@kbn/mcp-dev-server/*": [
         "src/platform/packages/shared/kbn-mcp-dev-server/*"
       ],
+      "@kbn/measure-component": [
+        "src/platform/packages/shared/kbn-measure-component"
+      ],
+      "@kbn/measure-component/*": [
+        "src/platform/packages/shared/kbn-measure-component/*"
+      ],
       "@kbn/metrics": [
         "src/platform/packages/private/opentelemetry/kbn-metrics"
       ],
@@ -4820,6 +4904,12 @@
       ],
       "@kbn/ml-chi2test/*": [
         "x-pack/platform/packages/shared/ml/chi2test/*"
+      ],
+      "@kbn/ml-common-types": [
+        "x-pack/platform/packages/shared/ml/common-types"
+      ],
+      "@kbn/ml-common-types/*": [
+        "x-pack/platform/packages/shared/ml/common-types/*"
       ],
       "@kbn/ml-creation-wizard-utils": [
         "x-pack/platform/packages/private/ml/creation_wizard_utils"
@@ -4946,6 +5036,12 @@
       ],
       "@kbn/ml-runtime-field-utils/*": [
         "x-pack/platform/packages/shared/ml/runtime_field_utils/*"
+      ],
+      "@kbn/ml-server-schemas": [
+        "x-pack/platform/packages/shared/ml/server-schemas"
+      ],
+      "@kbn/ml-server-schemas/*": [
+        "x-pack/platform/packages/shared/ml/server-schemas/*"
       ],
       "@kbn/ml-string-hash": [
         "x-pack/platform/packages/private/ml/string_hash"
@@ -5313,6 +5409,12 @@
       "@kbn/peggy-loader/*": [
         "packages/kbn-peggy-loader/*"
       ],
+      "@kbn/perf-page-load": [
+        "packages/kbn-perf-page-load"
+      ],
+      "@kbn/perf-page-load/*": [
+        "packages/kbn-perf-page-load/*"
+      ],
       "@kbn/performance-testing-dataset-extractor": [
         "packages/kbn-performance-testing-dataset-extractor"
       ],
@@ -5354,12 +5456,6 @@
       ],
       "@kbn/preboot-example-plugin/*": [
         "examples/preboot_example/*"
-      ],
-      "@kbn/presentation-panel-plugin": [
-        "src/platform/plugins/private/presentation_panel"
-      ],
-      "@kbn/presentation-panel-plugin/*": [
-        "src/platform/plugins/private/presentation_panel/*"
       ],
       "@kbn/presentation-publishing": [
         "src/platform/packages/shared/presentation/presentation_publishing"
@@ -5444,6 +5540,12 @@
       ],
       "@kbn/projects-solutions-groups/*": [
         "src/platform/packages/private/kbn-projects-solutions-groups/*"
+      ],
+      "@kbn/query-activity-plugin": [
+        "x-pack/platform/plugins/shared/query_activity"
+      ],
+      "@kbn/query-activity-plugin/*": [
+        "x-pack/platform/plugins/shared/query_activity/*"
       ],
       "@kbn/random-sampling": [
         "x-pack/platform/packages/private/kbn-random-sampling"
@@ -5697,6 +5799,12 @@
       "@kbn/resolver-test-plugin/*": [
         "x-pack/solutions/security/test/plugin_functional/plugins/resolver_test/*"
       ],
+      "@kbn/response-ops-alert-snooze": [
+        "x-pack/platform/packages/shared/response-ops/alert-snooze"
+      ],
+      "@kbn/response-ops-alert-snooze/*": [
+        "x-pack/platform/packages/shared/response-ops/alert-snooze/*"
+      ],
       "@kbn/response-ops-alerts-apis": [
         "x-pack/platform/packages/shared/response-ops/alerts-apis"
       ],
@@ -5726,6 +5834,12 @@
       ],
       "@kbn/response-ops-alerts-table/*": [
         "x-pack/platform/packages/shared/response-ops/alerts-table/*"
+      ],
+      "@kbn/response-ops-detections-close-reason": [
+        "x-pack/platform/packages/shared/response-ops/detections-close-reason"
+      ],
+      "@kbn/response-ops-detections-close-reason/*": [
+        "x-pack/platform/packages/shared/response-ops/detections-close-reason/*"
       ],
       "@kbn/response-ops-form-generator": [
         "x-pack/platform/packages/shared/response-ops/form-generator"
@@ -5828,6 +5942,12 @@
       ],
       "@kbn/rrule/*": [
         "src/platform/packages/shared/kbn-rrule/*"
+      ],
+      "@kbn/rspack-optimizer": [
+        "packages/kbn-rspack-optimizer"
+      ],
+      "@kbn/rspack-optimizer/*": [
+        "packages/kbn-rspack-optimizer/*"
       ],
       "@kbn/rule-data-utils": [
         "src/platform/packages/shared/kbn-rule-data-utils"
@@ -6045,6 +6165,12 @@
       "@kbn/screenshotting-server/*": [
         "src/platform/packages/private/kbn-screenshotting-server/*"
       ],
+      "@kbn/search-agent": [
+        "src/platform/packages/shared/kbn-search-agent"
+      ],
+      "@kbn/search-agent/*": [
+        "src/platform/packages/shared/kbn-search-agent/*"
+      ],
       "@kbn/search-api-keys-components": [
         "x-pack/solutions/search/packages/kbn-search-api-keys-components"
       ],
@@ -6111,17 +6237,17 @@
       "@kbn/search-index-documents/*": [
         "x-pack/platform/packages/shared/kbn-search-index-documents/*"
       ],
-      "@kbn/search-indices": [
-        "x-pack/solutions/search/plugins/search_indices"
-      ],
-      "@kbn/search-indices/*": [
-        "x-pack/solutions/search/plugins/search_indices/*"
-      ],
       "@kbn/search-inference-endpoints": [
         "x-pack/platform/plugins/shared/search_inference_endpoints"
       ],
       "@kbn/search-inference-endpoints/*": [
         "x-pack/platform/plugins/shared/search_inference_endpoints/*"
+      ],
+      "@kbn/search-inference-endpoints-fixture-plugin": [
+        "x-pack/platform/test/search_inference_endpoints/plugins/search_inference_endpoints_fixture"
+      ],
+      "@kbn/search-inference-endpoints-fixture-plugin/*": [
+        "x-pack/platform/test/search_inference_endpoints/plugins/search_inference_endpoints_fixture/*"
       ],
       "@kbn/search-navigation": [
         "x-pack/solutions/search/plugins/search_navigation"
@@ -6531,12 +6657,6 @@
       "@kbn/serverless-security-settings/*": [
         "src/platform/packages/shared/serverless/settings/security_project/*"
       ],
-      "@kbn/serverless-storybook-config": [
-        "src/platform/packages/shared/serverless/storybook/config"
-      ],
-      "@kbn/serverless-storybook-config/*": [
-        "src/platform/packages/shared/serverless/storybook/config/*"
-      ],
       "@kbn/serverless-types": [
         "src/platform/packages/shared/serverless/types"
       ],
@@ -6656,12 +6776,6 @@
       ],
       "@kbn/shared-ux-error-boundary/*": [
         "src/platform/packages/shared/shared-ux/error_boundary/*"
-      ],
-      "@kbn/shared-ux-feedback-snippet": [
-        "src/platform/packages/shared/shared-ux/feedback_snippet"
-      ],
-      "@kbn/shared-ux-feedback-snippet/*": [
-        "src/platform/packages/shared/shared-ux/feedback_snippet/*"
       ],
       "@kbn/shared-ux-file-context": [
         "src/platform/packages/shared/shared-ux/file/context"
@@ -7125,6 +7239,12 @@
       "@kbn/styled-components-mapping-cli/*": [
         "packages/kbn-styled-components-mapping-cli/*"
       ],
+      "@kbn/swc-config": [
+        "packages/kbn-swc-config"
+      ],
+      "@kbn/swc-config/*": [
+        "packages/kbn-swc-config/*"
+      ],
       "@kbn/synthetics-forge": [
         "x-pack/solutions/observability/packages/kbn-synthetics-forge"
       ],
@@ -7425,6 +7545,12 @@
       "@kbn/translations-plugin/*": [
         "x-pack/platform/plugins/private/translations/*"
       ],
+      "@kbn/transpiler-config": [
+        "packages/kbn-transpiler-config"
+      ],
+      "@kbn/transpiler-config/*": [
+        "packages/kbn-transpiler-config/*"
+      ],
       "@kbn/transpose-utils": [
         "src/platform/packages/private/kbn-transpose-utils"
       ],
@@ -7514,6 +7640,12 @@
       ],
       "@kbn/ui-shared-deps-src/*": [
         "src/platform/packages/private/kbn-ui-shared-deps-src/*"
+      ],
+      "@kbn/ui-side-navigation": [
+        "src/platform/kbn-ui/side-navigation"
+      ],
+      "@kbn/ui-side-navigation/*": [
+        "src/platform/kbn-ui/side-navigation/*"
       ],
       "@kbn/ui-theme": [
         "src/platform/packages/shared/kbn-ui-theme"
@@ -7899,6 +8031,12 @@
       "@kbn/workflows-ui/*": [
         "src/platform/packages/shared/kbn-workflows-ui/*"
       ],
+      "@kbn/workflows-yaml": [
+        "src/platform/packages/shared/kbn-workflows-yaml"
+      ],
+      "@kbn/workflows-yaml/*": [
+        "src/platform/packages/shared/kbn-workflows-yaml/*"
+      ],
       "@kbn/workplace-ai-app": [
         "x-pack/solutions/workplaceai/plugins/workplace_ai_app"
       ],
@@ -7916,6 +8054,12 @@
       ],
       "@kbn/xstate-utils/*": [
         "src/platform/packages/shared/kbn-xstate-utils/*"
+      ],
+      "@kbn/yaml-loader": [
+        "src/platform/packages/shared/kbn-yaml-loader"
+      ],
+      "@kbn/yaml-loader/*": [
+        "src/platform/packages/shared/kbn-yaml-loader/*"
       ],
       "@kbn/yaml-rule-editor": [
         "x-pack/platform/packages/shared/response-ops/yaml-rule-editor"

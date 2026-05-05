@@ -131,6 +131,8 @@ export const AGENT_BUILDER_BUILTIN_SKILLS = [
   'detection-rule-edit',
   'threat-hunting',
   'attack-discovery-alert-retrieval-builder',
+  'attack-discovery-generator',
+  'attack-discovery-workflow-troubleshooting',
 
   // O11Y
   'observability.rca',

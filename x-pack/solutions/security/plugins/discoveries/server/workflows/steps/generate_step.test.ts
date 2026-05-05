@@ -114,6 +114,11 @@ describe('GenerateStepDefinition', () => {
     mockGetAttackDiscoveryPrompts.mockResolvedValue(mockPrompts);
     mockActionsClient.get.mockResolvedValue({
       actionTypeId: '.gemini',
+      id: 'test-connector-id',
+      isConnectorTypeDeprecated: false,
+      isDeprecated: false,
+      isPreconfigured: false,
+      isSystemAction: false,
       name: 'Test Connector',
     });
 

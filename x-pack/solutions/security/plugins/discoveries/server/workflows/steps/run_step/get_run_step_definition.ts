@@ -17,6 +17,10 @@ import { RunStepCommonDefinition } from '../../../../common/step_types/run_step'
 import type { DiscoveriesPluginStartDeps } from '../../../types';
 import { resolveConnectorDetails } from '../../helpers/resolve_connector_details';
 import type { WorkflowInitializationService } from '../../../lib/workflow_initialization';
+import { ATTACK_DISCOVERY_RUN_SOFT_DEADLINE_MS } from './constants';
+
+const SOFT_DEADLINE_SENTINEL = Symbol('attack-discovery-run-soft-deadline');
+type SoftDeadlineSentinel = typeof SOFT_DEADLINE_SENTINEL;
 
 /**
  * Server-side implementation of the Attack Discovery run step.
@@ -146,7 +150,50 @@ export const getRunStepDefinition = ({
           };
         }
 
-        const outcome = await executeGenerationWorkflow(executeParams);
+        // sync mode races the pipeline against a soft deadline (see constants.ts).
+        // If the pipeline doesn't finish in time, return execution_uuid only and
+        // let the pipeline keep running in the background — the AB workflow tool
+        // wrapper then receives a clean response well inside its own 120s ceiling,
+        // and the agent resumes via the dedicated AD status tool.
+        const pipelinePromise = executeGenerationWorkflow(executeParams);
+
+        let softDeadlineTimer: NodeJS.Timeout | undefined;
+        const softDeadlinePromise = new Promise<SoftDeadlineSentinel>((resolve) => {
+          softDeadlineTimer = setTimeout(
+            () => resolve(SOFT_DEADLINE_SENTINEL),
+            ATTACK_DISCOVERY_RUN_SOFT_DEADLINE_MS
+          );
+        });
+
+        const raced = await Promise.race([pipelinePromise, softDeadlinePromise]);
+
+        if (raced === SOFT_DEADLINE_SENTINEL) {
+          context.logger.info(
+            `Attack Discovery sync pipeline exceeded soft deadline of ${ATTACK_DISCOVERY_RUN_SOFT_DEADLINE_MS}ms; returning execution_uuid for slow-path resume (execution=${executionUuid})`
+          );
+
+          // The pipeline keeps running in the background; surface any later
+          // rejection so it doesn't surface as an unhandled promise rejection.
+          pipelinePromise.catch((err) => {
+            logger.error(
+              `Attack Discovery sync pipeline rejected after returning early (execution=${executionUuid}): ${
+                err instanceof Error ? err.message : String(err)
+              }`
+            );
+          });
+
+          return {
+            output: {
+              execution_uuid: executionUuid,
+            },
+          };
+        }
+
+        if (softDeadlineTimer != null) {
+          clearTimeout(softDeadlineTimer);
+        }
+
+        const outcome = raced;
 
         if (outcome.outcome === 'validation_succeeded') {
           const { alertRetrievalResult, generationResult, validationResult } = outcome;

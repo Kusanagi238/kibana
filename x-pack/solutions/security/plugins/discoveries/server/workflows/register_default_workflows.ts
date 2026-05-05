@@ -15,7 +15,6 @@ interface DefaultWorkflowDefinition {
   key:
     | 'custom_validation_example'
     | 'default_alert_retrieval'
-    | 'esql_example_alert_retrieval'
     | 'generation'
     | 'run_example'
     | 'validate';
@@ -37,11 +36,6 @@ const DEFAULT_WORKFLOWS: DefaultWorkflowDefinition[] = [
     key: 'default_alert_retrieval',
     searchTag: 'attackDiscovery:default_alert_retrieval',
     yamlPath: 'default_attack_discovery_alert_retrieval.workflow.yaml',
-  },
-  {
-    key: 'esql_example_alert_retrieval',
-    searchTag: 'attackDiscovery:esql_example_alert_retrieval',
-    yamlPath: 'attack_discovery_esql_example.workflow.yaml',
   },
   {
     key: 'generation',

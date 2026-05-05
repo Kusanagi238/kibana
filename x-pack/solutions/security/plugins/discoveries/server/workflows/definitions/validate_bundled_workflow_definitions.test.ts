@@ -8,7 +8,7 @@
 import { readdirSync, readFileSync } from 'fs';
 import { join } from 'path';
 import { parseDocument } from 'yaml';
-import { validateLiquidTemplate } from '@kbn/workflows-management-plugin/common/lib/validate_liquid_template';
+import { validateLiquidTemplate } from '@kbn/workflows-yaml';
 
 const DEFINITIONS_DIR = __dirname;
 

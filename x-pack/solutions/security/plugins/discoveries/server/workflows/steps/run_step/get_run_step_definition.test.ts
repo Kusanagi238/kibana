@@ -7,8 +7,13 @@
 
 import type { Logger } from '@kbn/core/server';
 
-import { getRunStepDefinition } from './get_run_step_definition';
 import { resolveConnectorDetails } from '../../helpers/resolve_connector_details';
+
+jest.mock('./constants', () => ({
+  ATTACK_DISCOVERY_RUN_SOFT_DEADLINE_MS: 25,
+}));
+
+import { getRunStepDefinition } from './get_run_step_definition';
 
 const mockExecuteGenerationWorkflow = jest.fn();
 
@@ -251,6 +256,47 @@ describe('getRunStepDefinition', () => {
         discovery_count: 0,
         execution_uuid: 'test-execution-uuid',
       });
+    });
+  });
+
+  describe('soft deadline (sync mode)', () => {
+    it('returns execution_uuid only when the pipeline exceeds the soft deadline', async () => {
+      mockExecuteGenerationWorkflow.mockReturnValue(new Promise(() => {}));
+
+      const stepDefinition = getStepDefinition();
+
+      const result = await stepDefinition.handler(syncMockContext as never);
+
+      expect(result.output).toEqual({ execution_uuid: 'test-execution-uuid' });
+    });
+
+    it('omits attack_discoveries when the pipeline exceeds the soft deadline', async () => {
+      mockExecuteGenerationWorkflow.mockReturnValue(new Promise(() => {}));
+
+      const stepDefinition = getStepDefinition();
+
+      const result = await stepDefinition.handler(syncMockContext as never);
+
+      expect(result.output).not.toHaveProperty('attack_discoveries');
+    });
+
+    it('returns the full sync output when the pipeline finishes before the soft deadline', async () => {
+      mockExecuteGenerationWorkflow.mockResolvedValue(mockSuccessOutcome);
+
+      const stepDefinition = getStepDefinition();
+
+      const result = await stepDefinition.handler(syncMockContext as never);
+
+      expect(result.output?.attack_discoveries).toEqual([
+        {
+          alert_ids: ['alert-1'],
+          details_markdown: 'Details about the attack',
+          entity_summary_markdown: 'Entity summary',
+          mitre_attack_tactics: ['Initial Access'],
+          summary_markdown: 'A summary',
+          title: 'Test Discovery',
+        },
+      ]);
     });
   });
 

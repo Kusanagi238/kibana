@@ -35,7 +35,6 @@ const REQUIRED_WORKFLOW_KEYS = ['default_alert_retrieval', 'generation', 'valida
 const ALL_WORKFLOW_KEYS = [
   'custom_validation_example',
   'default_alert_retrieval',
-  'esql_example_alert_retrieval',
   'generation',
   'run_example',
   'validate',

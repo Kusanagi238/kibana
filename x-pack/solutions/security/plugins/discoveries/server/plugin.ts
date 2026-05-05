@@ -238,8 +238,26 @@ export class DiscoveriesPlugin
     // Register agent builder attachment types and skills
     if (plugins.agentBuilder) {
       plugins.agentBuilder.attachments.registerType(createDiagnosticReportAttachmentType());
+      const workflowsManagementApi = this.workflowsManagementApi;
       registerSkills(plugins.agentBuilder, this.logger, {
-        workflowFetcher: this.workflowsManagementApi,
+        getEventLogIndex,
+        runAttackDiscoveryToolDeps: {
+          analytics: core.analytics,
+          getEventLogIndex,
+          getEventLogger,
+          getStartServices,
+          logger: this.logger,
+          workflowInitService,
+          workflowsManagementApi,
+        },
+        workflowExecutionLookup:
+          workflowsManagementApi != null
+            ? {
+                getWorkflowExecution: (executionId, spaceId, options) =>
+                  workflowsManagementApi.getWorkflowExecution(executionId, spaceId, options),
+              }
+            : undefined,
+        workflowFetcher: workflowsManagementApi,
       }).catch((error) => {
         this.logger.error(`discoveries: Error registering skills: ${error}`);
       });
