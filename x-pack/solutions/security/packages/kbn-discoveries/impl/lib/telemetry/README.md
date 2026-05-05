@@ -2,9 +2,37 @@
 
 Event-Based Telemetry (EBT) events emitted by the `discoveries` plugin for the Attack Discovery 2.0 Workflows feature.
 
-## Privacy
+For system context (three execution paths, security surfaces, where these events are emitted from), see the canonical [discoveries plugin README](../../../../../plugins/discoveries/README.md).
 
-All events avoid collecting user-defined names, query content, alert data, or user identifiers. Only anonymous metadata (connector type IDs, model IDs, counts, modes, durations, boolean flags) is captured.
+## Privacy contract
+
+**No event field may carry**: query content, alert content, alert rule names, user-defined workflow names, user identifiers, connector credentials. Only enums, counts, durations, booleans, and IDs (UUIDs / connector IDs / workflow IDs).
+
+This contract is enforced at the boundary by the per-event reporters (`reportMisconfiguration`, `reportStepFailure`, `reportScheduleAction`, `reportWorkflowSuccess`, `reportWorkflowError`). Failed events MUST NOT include stack traces with file paths, raw provider error text, or user-controlled strings — only the classified `error_category` and a sanitized reason.
+
+### EBT event flow
+
+```mermaid
+graph TD
+  A[Workflow runs] --> B{outcome}
+  B -->|success| C[reportWorkflowSuccess]
+  B -->|error| D[reportWorkflowError]
+  A --> E[Step failure]
+  E --> F[reportStepFailure]
+  A --> G[Misconfig detected]
+  G --> H[reportMisconfiguration]
+  I[Schedule action] --> J[reportScheduleAction]
+  C --> K[attack_discovery_success]
+  D --> L[attack_discovery_error]
+  F --> M[attack_discovery_step_failure]
+  H --> N[attack_discovery_misconfiguration]
+  J --> O[attack_discovery_schedule_action]
+  K --> P[core.analytics]
+  L --> P
+  M --> P
+  N --> P
+  O --> P
+```
 
 ## Field Naming Convention
 
@@ -195,3 +223,24 @@ Emitted when an individual pipeline step fails during generation. Provides per-s
 | Which pipeline step failed and why? | `attack_discovery_step_failure` with `step` and `error_category` |
 | Root cause: config issue or runtime? | `failed_step` and `misconfiguration_detected` on `attack_discovery_error` |
 | How many discoveries were deduplicated? | `duplicatesDroppedCount` on `attack_discovery_success` (both legacy and workflow paths) |
+
+
+## `error_category` enum reference
+
+`error_category` on `attack_discovery_step_failure` is produced by `classifyErrorCategory` (see [`report_step_failure/`](report_step_failure/)) which heuristically maps an error to one of the bounded values below. The raw error message is **not** retained on the event.
+
+| Value | Meaning |
+| --- | --- |
+| `connector_error` | Connector-related failure (LLM rejected request, auth failure, model unavailable) |
+| `timeout` | Step exceeded its workflow `timeout` value |
+| `validation_error` | Validation step rejected the discoveries (e.g., hallucination detection failed all of them) |
+| `workflow_error` | Workflow execution failure (engine error, missing step, invalid YAML) |
+| `unknown` | Heuristic could not classify; fallback so the field is always set |
+
+If a new failure mode warrants its own category, extend the enum in `classifyErrorCategory` and update this table.
+
+## FAQ
+
+**Why are some fields camelCase?** `attack_discovery_success` and `attack_discovery_error` are shared with `elastic_assistant`'s legacy path. Their pre-existing fields are camelCase and must not be renamed (would break the schema). All new fields on these events and all fields on the three `discoveries`-owned events are snake_case.
+
+**How are `discoveries`-owned events distinguished from legacy events?** Via `execution_mode: 'workflow'` on `attack_discovery_success/error` (legacy never sets this field). The three `discoveries`-owned events (`attack_discovery_misconfiguration`, `attack_discovery_step_failure`, `attack_discovery_schedule_action`) are only emitted on the workflow path, so their presence is itself a signal.

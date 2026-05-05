@@ -12,11 +12,6 @@ export {
 } from './routes/post/generate/post_generate.gen';
 
 export {
-  PostGenerateWorkflowRequestBody,
-  PostGenerateWorkflowResponse,
-} from './routes/post/generate_workflow/post_generate_workflow.gen';
-
-export {
   PostValidateRequestBody,
   PostValidateResponse,
 } from './routes/post/validate/post_validate.gen';

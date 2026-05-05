@@ -2,19 +2,26 @@
 
 Shared server-side business logic for Attack Discovery and Defend Insights.
 
+## Why this package exists
+
+`@kbn/discoveries` extracts shared server-side logic out of `elastic_assistant` so both `elastic_assistant` and the `discoveries` plugin can consume the same code without duplication. It is the canonical home for the LangGraph generation pipeline, the event-log writer, the anonymization helpers, hallucination detection, and the EBT telemetry event definitions and reporters.
+
+This package is **server-only** (`"type": "shared-server"` in `kibana.jsonc`). It cannot be imported by browser code; the `kbn/imports` ESLint rule enforces this at build time.
+
+For the full architectural context — three execution paths, five workflow steps, anonymization boundary, security surfaces — see the canonical [discoveries plugin README](../../plugins/discoveries/README.md).
+
 ## Overview
 
 This package contains reusable logic consumed by both the `elastic_assistant` and `discoveries` plugins:
 
 - **LangGraph graphs** for Attack Discovery and Defend Insights generation
+- **Orchestration** (`runManualOrchestration`, `executeGenerationWorkflow`) — chains alert retrieval → generation → validation+persist with timeout budgets
 - **Event logging utilities** for generation tracking (shared across both plugins)
 - **Hallucination detection** for filtering invalid discoveries
-- **Alert anonymization and field definitions**
+- **Alert anonymization and field definitions** — including `replaceAnonymizedValuesWithOriginalValues` (the de-anonymization helper that bridges raw and anonymized data)
 - **Schedule transforms** for converting between API and internal representations
 - **LangChain utilities** for output chunking (generate/refine nodes and edges)
-- **Telemetry event definitions** for EBT reporting
-
-This package is **server-only** (`"type": "shared-server"` in `kibana.jsonc`). It must not be imported by browser code.
+- **Telemetry event definitions and reporters** for EBT
 
 ## Structure
 
@@ -106,6 +113,18 @@ The root `index.ts` exports a curated set of named exports. There are no barrel 
 | `DEFEND_INSIGHTS_GRAPH_RUN_NAME` | Constant | Graph run name identifier |
 | `DefaultDefendInsightsGraph`, `DefendInsightsCombinedPrompts`, etc. | Types | Defend Insights graph types |
 
+### Security-relevant exports (cross-link map)
+
+These exports cross the security boundaries described in the plugin README. Read them alongside the relevant plugin-README section before changing them:
+
+| Export | Boundary | See |
+|--------|----------|-----|
+| `replaceAnonymizedValuesWithOriginalValues`, `getOriginalAlertIds` | Anonymization boundary | [Anonymization Boundary](../../plugins/discoveries/README.md#anonymization-boundary) |
+| `writeAttackDiscoveryEvent`, `ATTACK_DISCOVERY_EVENT_LOG_ACTION_*`, `getDurationNanoseconds` | Event log privacy contract | [Event Logging](../../plugins/discoveries/README.md#event-logging) |
+| `executeGenerationWorkflow`, `runManualOrchestration` | Orchestrator entry points (3-phase pipeline) | [Orchestration, event logging, pre-execution validation](../../plugins/discoveries/README.md#orchestration-event-logging-pre-execution-validation-landed-in-pr-4) |
+| `reportMisconfiguration`, `reportStepFailure`, `reportScheduleAction`, `reportWorkflowSuccess`, `reportWorkflowError` | EBT privacy contract | [Telemetry README](impl/lib/telemetry/README.md) |
+| `attackDiscoveryAlertFieldMap`, `ALERT_ATTACK_DISCOVERY_*` | Alert document schema | (no public-facing boundary; see field map source) |
+
 ## Consumers
 
 | Plugin | Uses |
@@ -130,3 +149,26 @@ npm run openapi:generate
    - `impl/defend_insights/` for Defend Insights logic
 2. Export from the root `index.ts` using an explicit named export (no barrel re-exports).
 3. Write unit tests alongside the implementation.
+
+## Testing
+
+Run the package's Jest battery:
+
+```bash
+node scripts/jest --coverage x-pack/solutions/security/packages/kbn-discoveries
+```
+
+The four Jest jobs that should always pass with zero failures when changing this package or its consumers are:
+
+```bash
+node scripts/jest --coverage x-pack/solutions/security/packages/kbn-discoveries
+node scripts/jest --coverage x-pack/solutions/security/plugins/discoveries
+node scripts/jest --coverage x-pack/solutions/security/plugins/elastic_assistant
+node scripts/jest --coverage x-pack/solutions/security/plugins/security_solution/public/attack_discovery
+```
+
+Type check (scoped):
+
+```bash
+node scripts/type_check --project x-pack/solutions/security/packages/kbn-discoveries/tsconfig.json
+```

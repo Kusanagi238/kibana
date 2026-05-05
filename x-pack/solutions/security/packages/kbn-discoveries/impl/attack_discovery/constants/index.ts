@@ -20,9 +20,6 @@ export const ATTACK_DISCOVERY_DEFAULT_VALIDATION_WORKFLOW_ID = 'attack-discovery
 export const ATTACK_DISCOVERY_VALIDATE_WORKFLOW_ID =
   ATTACK_DISCOVERY_DEFAULT_VALIDATION_WORKFLOW_ID;
 
-/** ES|QL example alert retrieval workflow - demonstrates custom retrieval using ES|QL */
-export const ATTACK_DISCOVERY_ESQL_EXAMPLE_WORKFLOW_ID = 'attack-discovery-esql-example';
-
 /** Default alert retrieval workflow - retrieves and anonymizes alerts using built-in logic */
 export const ATTACK_DISCOVERY_DEFAULT_ALERT_RETRIEVAL_WORKFLOW_ID =
   'default-attack-discovery-alert-retrieval';
