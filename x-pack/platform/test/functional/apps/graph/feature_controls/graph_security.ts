@@ -74,7 +74,7 @@ export default function ({ getPageObjects, getService }: FtrProviderContext) {
       it('landing page shows "Create new graph" button', async () => {
         await common.navigateToApp('graph');
         await header.waitUntilLoadingHasFinished();
-        await testSubjects.existOrFail('graphLandingPage', { timeout: 10000 });
+        await testSubjects.existOrFail('kibana-content-list-page-header', { timeout: 10000 });
         await testSubjects.existOrFail('graphCreateGraphPromptButton');
       });
 
@@ -135,8 +135,14 @@ export default function ({ getPageObjects, getService }: FtrProviderContext) {
       it('does not show a "Create new Workspace" button', async () => {
         await common.navigateToApp('graph');
         await header.waitUntilLoadingHasFinished();
-        await testSubjects.existOrFail('graphLandingPage', { timeout: 10000 });
-        await testSubjects.missingOrFail('newItemButton');
+        await testSubjects.existOrFail('kibana-content-list-page-header', { timeout: 10000 });
+        // Both the page-header create button and the empty-state CTA must be
+        // absent for read-only users. `newItemButton` was the legacy
+        // `TableListView` test subject; the migrated listing emits
+        // `graphCreateGraphButton` (header) and `graphCreateGraphPromptButton`
+        // (empty state) instead.
+        await testSubjects.missingOrFail('graphCreateGraphButton');
+        await testSubjects.missingOrFail('graphCreateGraphPromptButton');
       });
 
       it(`shows read-only badge`, async () => {
