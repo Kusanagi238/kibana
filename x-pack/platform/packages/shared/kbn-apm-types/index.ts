@@ -52,3 +52,5 @@ export type * from './src/diagnostics';
 export type * from './src/apm_telemetry';
 export * from './src/ilm_types';
 export * from './src/storage_explorer_types';
+export * from './src/environment_rt';
+export * from './src/environment_filter_values';
