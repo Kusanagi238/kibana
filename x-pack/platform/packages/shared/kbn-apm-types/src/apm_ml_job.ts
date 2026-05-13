@@ -6,7 +6,7 @@
  */
 
 import type { DATAFEED_STATE, JOB_STATE } from '@kbn/ml-plugin/common';
-import type { Environment } from './environment_rt';
+import type { Environment } from '@kbn/apm-types-shared';
 
 export interface ApmMlJob {
   environment: Environment;
