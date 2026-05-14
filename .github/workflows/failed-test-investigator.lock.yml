@@ -48,23 +48,7 @@
 #   - node:lts-alpine@sha256:d1b3b4da11eefd5941e7f0b9cf17783fc99d9c6fc34884a665f40a06dbdfc94f
 
 name: "Failed Test Investigator"
-"on":
-  issues:
-    types:
-    - opened
-    - labeled
-    - reopened
-  workflow_dispatch:
-    inputs:
-      aw_context:
-        default: ""
-        description: Agent caller context (used internally by Agentic Workflows).
-        required: false
-        type: string
-      issue_number:
-        description: Issue number in this repository to investigate
-        required: true
-        type: string
+on:push
 
 permissions: {}
 
